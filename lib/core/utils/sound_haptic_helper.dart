@@ -15,6 +15,9 @@ class SoundHapticHelper {
   /// Played on interactive button taps
   static void buttonClick() {
     SoundService.instance.playButtonSound();
+    if (hapticsEnabled) {
+      HapticFeedback.selectionClick();
+    }
   }
 
   /// Played when placing a dog correctly on the board

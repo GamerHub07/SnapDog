@@ -1,172 +1,132 @@
-# SnapDog – Step 4: Complete Gameplay UI Redesign
+# SnapDog – Step 5: Gameplay Experience & Feedback Polish
 
-Redesign the existing SnapDog gameplay screen using the previously supplied reference images.
+Improve the gameplay experience of the existing SnapDog Flutter application. Focus on sound effects, animations, visual feedback, and the level-completion experience.
 
-## Reference instructions
+**Important:** The existing gameplay UI and puzzle logic are approved. Do not redesign the gameplay screen, change the board layout, modify puzzle rules, or break any existing functionality.
 
-- Reference Image 1: Existing SnapDog implementation. Preserve its functionality.
-- Reference Image 2: Primary reference for gameplay layout, hierarchy, and arrangement.
-- Reference Image 3: Primary reference for 3D clay pets, colorful board tiles, and character styling.
+## 1. Sound Effects
 
-Do not generate new images. Use the dog artwork/assets already supplied or available in the project. If additional breed assets are missing, create clearly documented placeholders and report them rather than silently using unrelated artwork.
+First inspect the existing codebase to determine whether sound effects have already been implemented. Reuse existing functionality and implement only what is missing.
 
-## 1. Overall visual identity
+Add appropriate short sound effects for:
 
-Build a polished, playful, premium casual mobile puzzle game.
-
-Design characteristics:
-- Soft pastel color palette.
-- Warm cream background.
-- Rounded cards and controls.
-- Colorful rounded board tiles.
-- 3D clay-style dog characters.
-- Soft shadows and subtle depth.
-- Friendly, readable typography.
-- Consistent spacing and alignment.
-
-Avoid excessive gradients, clutter, and oversized decorative elements.
-
-## 2. Gameplay header
-
-Redesign the top section inspired by Reference Image 2.
-
-Include:
-- Back button.
-- Puzzle level and puzzle name.
-- Score or progress.
-- Settings button.
-- Timer.
-- Mistake counter (0/3).
-
-Keep this area compact.
-
-## 3. Rules section
-
-Display the game rules in compact illustrated cards:
-
-- One dog per row.
-- One dog per column.
-- One dog per color region.
-- Dogs cannot touch, including diagonally.
-
-Use small grid illustrations and concise text.
-
-Do not allow this section to consume too much vertical space.
-
-## 4. Automatic Dog Breed Assignment
-
-Introduce different 3D clay dog breeds.
-
-Initial breeds:
-- Corgi.
-- Shiba Inu.
-- Pug.
-- Husky.
-- Golden Retriever.
-- Beagle.
+- Dog placed correctly – satisfying success sound.
+- Cross/X marked – subtle pop.
+- Incorrect dog placement – gentle error sound.
+- Undo – reverse pop.
+- Hint used – sparkle sound.
+- Button interaction – subtle click.
+- Level completed – cheerful celebration sound.
 
 Requirements:
+- Use locally bundled audio assets.
+- Use a dedicated AudioManager or SoundService.
+- Avoid downloading sounds at runtime.
+- Prevent overlapping sounds from becoming unpleasant.
+- Add sound on/off and volume controls in Settings.
+- Persist sound preferences locally.
+- Keep sound and haptics settings independent.
+- Gracefully handle missing audio assets.
 
-- Automatically assign different breeds to the ten dog placements in each puzzle.
-- Do not require manual breed selection.
-- Use a deterministic assignment for a given puzzle so the same puzzle always displays the same breed arrangement.
-- Use a balanced distribution across available breeds.
-- Repeated breeds are allowed because there are ten placements and fewer initial breeds.
-- Ensure every breed has consistent proportions, lighting, image quality, and visual style.
-- Keep dog images centered and properly scaled inside board cells.
-- Do not let breed identity affect puzzle validation, placement correctness, or the verified solution.
+Do not generate new artwork or audio using AI. Use existing assets or clearly document any missing assets.
 
-IMPORTANT:
-The breeds are visual variations of the same game object: a dog. All existing placement and validation rules must remain exactly the same.
+## 2. Dog Placement Animations
 
-## 5. Puzzle board redesign
+Add polished, lightweight animations:
 
-Use Reference Image 3 for the visual direction.
+- Correct dog placement: subtle scale-up and bounce.
+- Correct dog locked into the board: gentle glow or success feedback.
+- X marking: quick pop animation.
+- Undo: subtle reverse animation.
+- Hint: highlight the suggested cell with a pulsing animation.
+
+Animations should feel responsive and should not delay user interactions.
+
+## 3. Mistake Feedback
+
+Improve the existing wrong-placement feedback:
+
+- Preserve the existing mistake popup design.
+- Add a brief shake animation to the incorrect cell.
+- Play the error sound.
+- Update the mistake counter exactly once.
+- Remove the incorrect dog as currently implemented.
+- Preserve the three-mistake limit.
+
+Do not add unnecessary animations that make the game feel slow.
+
+## 4. Level Completion Experience
+
+Create a polished level-completion screen or overlay.
+
+It should include:
+- A cheerful celebration animation.
+- A happy dog illustration using existing assets.
+- "Level Completed!" heading.
+- Completion time.
+- Number of mistakes.
+- Hints used.
+- A button to continue to the next level.
+- A button to return to the level selection screen, if one exists.
 
 Requirements:
-- Preserve the existing 10x10 board.
-- Preserve all existing region boundaries and puzzle data.
-- Use rounded square tiles.
-- Introduce subtle shadows and raised tile styling.
-- Use coordinated pastel region colors.
-- Make dog illustrations prominent and recognizable.
-- Keep X markers large, bold, and clearly visible.
-- Maintain sufficient contrast.
-- Provide clear visual distinction between empty, crossed, selected, and dog-occupied cells.
+- Trigger completion only when all puzzle conditions are satisfied.
+- Prevent multiple completion events for the same puzzle.
+- Save progress exactly once.
+- Stop the timer after completion.
+- Preserve the existing level progression and daily challenge logic.
+- Ensure the next-level button loads the correct next puzzle.
 
-Do not make the board so decorative that cell boundaries become difficult to identify.
+## 5. Settings
 
-## 6. Screen layout
+Verify that the settings screen provides:
+- Sound toggle.
+- Sound volume control.
+- Haptics toggle.
 
-Organize the screen in this order:
+Persist these preferences and apply them immediately.
 
-1. Compact gameplay header.
-2. Game rules.
-3. Dog breed preview/character collection.
-4. Puzzle board.
-5. Bottom action controls.
+## 6. Performance and Compatibility
 
-The board should receive the largest possible usable screen area.
+- Keep animations lightweight and suitable for Android devices.
+- Avoid unnecessary widget rebuilds.
+- Dispose of animation controllers and audio resources properly.
+- Ensure sounds and animations do not interfere with double-tap dog placement or drag-to-mark-X gestures.
+- Test on different screen sizes.
 
-Avoid unnecessary vertical scrolling on standard Android phones.
+## 7. Testing
 
-Use responsive sizing for smaller devices.
-
-## 7. Bottom controls
-
-Redesign:
-- Undo.
-- Reset.
-- Hint.
-
-Use compact circular or rounded controls with clear icons and labels.
-
-Preserve all existing functionality and confirmation dialogs.
-
-## 8. Existing gameplay behavior – MUST PRESERVE
-
-Do not modify:
-- Single tap to mark/unmark X.
-- Double tap to place a dog.
-- Dragging across cells to mark multiple Xs.
-- One undo action for an entire drag.
-- Correct dog locking.
-- Three-mistake limit.
-- Wrong placement feedback.
+Verify:
+- Correct dog placement feedback.
+- Wrong placement feedback and mistake counting.
+- Undo behavior.
 - Hint behavior.
-- Puzzle completion.
-- Daily challenges.
-- Puzzle progression.
-- Local persistence.
-- Sound and haptic settings.
-
-Do not introduce interaction delays or gesture conflicts.
-
-## 9. Code quality
-
-- Reuse existing widgets and architecture where practical.
-- Keep the board responsive.
-- Avoid rebuilding the entire board unnecessarily.
-- Use reusable components.
-- Keep breed assignment separate from puzzle validation.
-- Avoid adding unnecessary dependencies.
-
-## 10. Verification
-
-Test:
-- All existing gameplay interactions.
-- Breed assignment consistency for the same puzzle.
-- Correct display of all available breeds.
-- Small and large Android screen layouts.
-- Dog image scaling and cropping.
-- Dialog positioning.
-- Board performance during rapid taps and dragging.
+- Sound settings persistence.
+- Haptics settings persistence.
+- Completion screen appears exactly once.
+- Timer stops after completion.
+- Next-level progression works correctly.
+- Existing daily challenge behavior remains intact.
 
 Run:
-- flutter test
-- flutter analyze
-- flutter build apk --debug
 
-Provide a summary of the redesigned screen, changed files, breed assignment implementation, and any missing assets.
+```bash
+flutter test
+flutter analyze
+flutter build apk --debug
+```
 
-Do not redesign other application screens in this milestone. Focus only on the gameplay screen.
+## Final Instructions
+
+Do not change the approved gameplay layout or puzzle mechanics.
+
+Do not replace the current dog artwork in this milestone. We will handle consistent dog illustrations separately.
+
+At the end, provide:
+1. Features implemented.
+2. Files created or modified.
+3. Audio assets used and their locations.
+4. Tests performed and their results.
+5. Any remaining issues.
+
+Implement carefully, preserving all existing working functionality.

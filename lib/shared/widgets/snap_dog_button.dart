@@ -74,7 +74,7 @@ class _SnapDogButtonState extends State<SnapDogButton> {
       onTapDown: isEnabled
           ? (_) {
               setState(() => _isPressed = true);
-              SoundHapticHelper.lightTap();
+              SoundHapticHelper.buttonClick();
             }
           : null,
       onTapUp: isEnabled

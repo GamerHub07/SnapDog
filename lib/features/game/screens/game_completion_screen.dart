@@ -56,7 +56,19 @@ class GameCompletionScreen extends StatelessWidget {
                     size: 160,
                     mood: DogMascotMood.excited,
                   ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
+
+                // Level Completed Heading
+                Text(
+                  'Level Completed!',
+                  style: AppTextStyles.titleMedium.copyWith(
+                    color: AppColors.primaryDark,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 4),
 
                 // Victory Title
                 Text(
@@ -66,7 +78,7 @@ class GameCompletionScreen extends StatelessWidget {
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 Text(
                   'All 10 dogs placed happily in $puzzleTitle!',
                   style: AppTextStyles.bodyMedium.copyWith(
@@ -106,7 +118,7 @@ class GameCompletionScreen extends StatelessWidget {
                 // Stats Card (Time, Best Time, Hints Used, Mistakes)
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 16),
+                  padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 10),
                   decoration: BoxDecoration(
                     color: theme.cardTheme.color ?? (isDark ? const Color(0xFF2A221E) : AppColors.card),
                     borderRadius: BorderRadius.circular(24),
@@ -143,7 +155,7 @@ class GameCompletionScreen extends StatelessWidget {
                           )),
                         ],
                       ),
-                      // Best Time Stat (if available and not already identical to current time when not isNewBestTime)
+                      // Best Time Stat (if available)
                       if (bestTimeSeconds != null) ...[
                         Container(height: 44, width: 1, color: isDark ? const Color(0xFF3F332C) : AppColors.cardBorder),
                         Column(
@@ -183,27 +195,29 @@ class GameCompletionScreen extends StatelessWidget {
                           )),
                         ],
                       ),
-                      if (mistakes > 0) ...[
-                        Container(height: 44, width: 1, color: isDark ? const Color(0xFF3F332C) : AppColors.cardBorder),
-                        // Mistakes Stat
-                        Column(
-                          children: [
-                            const Icon(Icons.close_rounded, color: AppColors.clashRed, size: 26),
-                            const SizedBox(height: 6),
-                            Text(
-                              '$mistakes',
-                              style: AppTextStyles.displayMedium.copyWith(
-                                fontSize: 20,
-                                color: AppColors.clashRed,
-                              ),
+                      Container(height: 44, width: 1, color: isDark ? const Color(0xFF3F332C) : AppColors.cardBorder),
+                      // Mistakes Stat
+                      Column(
+                        children: [
+                          Icon(
+                            mistakes == 0 ? Icons.check_circle_outline_rounded : Icons.close_rounded,
+                            color: mistakes == 0 ? AppColors.success : AppColors.clashRed,
+                            size: 26,
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            '$mistakes',
+                            style: AppTextStyles.displayMedium.copyWith(
+                              fontSize: 20,
+                              color: mistakes == 0 ? (isDark ? const Color(0xFFFFF4EC) : AppColors.primaryDark) : AppColors.clashRed,
                             ),
-                            const SizedBox(height: 2),
-                            Text('Mistakes', style: AppTextStyles.bodySmall.copyWith(
-                              color: isDark ? const Color(0xFF9E8B7F) : AppColors.textMuted,
-                            )),
-                          ],
-                        ),
-                      ],
+                          ),
+                          const SizedBox(height: 2),
+                          Text('Mistakes', style: AppTextStyles.bodySmall.copyWith(
+                            color: isDark ? const Color(0xFF9E8B7F) : AppColors.textMuted,
+                          )),
+                        ],
+                      ),
                     ],
                   ),
                 ),

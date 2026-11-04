@@ -284,23 +284,25 @@ class _DailyCompletionScreenState extends State<DailyCompletionScreen> {
                           const Text('Hints', style: AppTextStyles.bodySmall),
                         ],
                       ),
-                      if (widget.mistakes > 0) ...[
-                        Container(height: 40, width: 1, color: AppColors.cardBorder),
-                        Column(
-                          children: [
-                            const Icon(Icons.close_rounded, color: AppColors.clashRed, size: 26),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${widget.mistakes}',
-                              style: AppTextStyles.titleMedium.copyWith(
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.clashRed,
-                              ),
+                      Container(height: 40, width: 1, color: AppColors.cardBorder),
+                      Column(
+                        children: [
+                          Icon(
+                            widget.mistakes == 0 ? Icons.check_circle_outline_rounded : Icons.close_rounded,
+                            color: widget.mistakes == 0 ? AppColors.success : AppColors.clashRed,
+                            size: 26,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${widget.mistakes}',
+                            style: AppTextStyles.titleMedium.copyWith(
+                              fontWeight: FontWeight.w800,
+                              color: widget.mistakes == 0 ? AppColors.primaryDark : AppColors.clashRed,
                             ),
-                            const Text('Mistakes', style: AppTextStyles.bodySmall),
-                          ],
-                        ),
-                      ],
+                          ),
+                          const Text('Mistakes', style: AppTextStyles.bodySmall),
+                        ],
+                      ),
                     ],
                   ),
                 ),

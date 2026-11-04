@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../shared/widgets/confetti_celebration.dart';
+import '../../../shared/widgets/dog_avatar.dart';
 import '../../../shared/widgets/dog_mascot.dart';
 import '../../../shared/widgets/paw_icon.dart';
 import '../../../shared/widgets/snap_dog_button.dart';
+import '../models/dog_breed.dart';
 
 class GameCompletionScreen extends StatelessWidget {
   final int timeSeconds;
@@ -85,6 +87,20 @@ class GameCompletionScreen extends StatelessWidget {
                     color: isDark ? const Color(0xFF9E8B7F) : AppColors.textMuted,
                   ),
                   textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+
+                // Celebratory 3D Dog Avatars
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  alignment: WrapAlignment.center,
+                  children: DogBreed.values.map((breed) {
+                    return DogAvatar.circularBadge(
+                      breed: breed,
+                      size: 34,
+                    );
+                  }).toList(),
                 ),
                 const SizedBox(height: 16),
 

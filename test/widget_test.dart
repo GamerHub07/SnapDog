@@ -1,14 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:snapdog/app.dart';
 import 'package:snapdog/features/game/screens/game_screen.dart';
 import 'package:snapdog/features/home/widgets/daily_challenge_card.dart';
+import 'package:snapdog/features/home/widgets/home_decorations.dart';
+import 'package:snapdog/features/home/widgets/home_dog_face_row.dart';
+import 'package:snapdog/features/home/widgets/latest_completed_challenge_card.dart';
 import 'package:snapdog/features/progression/screens/puzzle_selection_screen.dart';
+import 'package:snapdog/features/settings/screens/settings_screen.dart';
+import 'package:snapdog/features/statistics/screens/statistics_screen.dart';
 import 'package:snapdog/shared/widgets/cute_dog_character.dart';
 
 void main() {
-  testWidgets('SnapDog App renders Home screen with Continue Playing and Play buttons', (WidgetTester tester) async {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({
+      'snapdog_onboarding_completed': true,
+    });
+  });
+
+  testWidgets('SnapDog App renders Home screen with Continue Playing and Play Levels buttons', (WidgetTester tester) async {
     await tester.pumpWidget(
       const ProviderScope(
         child: SnapDogApp(),
@@ -23,10 +35,26 @@ void main() {
     expect(find.text('Can you place all 10 dogs with no touching?'), findsOneWidget);
     expect(find.text('Overall Progress'), findsOneWidget);
     expect(find.text('Continue Playing'), findsOneWidget);
-    expect(find.text('Play'), findsOneWidget);
+    expect(find.text('Play Levels'), findsOneWidget);
 
-    // Tap Play button to open PuzzleSelectionScreen
-    await tester.tap(find.text('Play'));
+    // Verify decorative row of 3D dog face illustrations
+    expect(find.byType(HomeDogFaceRow), findsOneWidget);
+
+    // Verify settings button on header
+    expect(find.byIcon(Icons.settings_rounded), findsWidgets);
+
+    // Verify statistics card is removed from home screen
+    expect(find.text('Games Played'), findsNothing);
+    expect(find.text('Day Streak'), findsNothing);
+
+    // Verify subtle decorative background elements are present
+    expect(find.byType(HomeBackgroundDecorations), findsOneWidget);
+
+    // Verify LatestCompletedChallengeCard is present in Home screen
+    expect(find.byType(LatestCompletedChallengeCard), findsOneWidget);
+
+    // Tap Play Levels button to open PuzzleSelectionScreen
+    await tester.tap(find.text('Play Levels'));
     await tester.pumpAndSettle();
 
     expect(find.byType(PuzzleSelectionScreen), findsOneWidget);
@@ -34,6 +62,68 @@ void main() {
     expect(find.text('Easy'), findsOneWidget);
     expect(find.text('Medium'), findsOneWidget);
     expect(find.text('Hard'), findsOneWidget);
+  });
+
+  testWidgets('Progress screen displays relocated statistics, streaks, achievements, and completion history', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const ProviderScope(
+        child: SnapDogApp(),
+      ),
+    );
+
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Switch to Progress tab in bottom navigation
+    await tester.tap(find.byIcon(Icons.bar_chart_rounded));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
+
+    // Verify StatisticsScreen rendered with all relocated metrics
+    expect(find.byType(StatisticsScreen), findsOneWidget);
+    expect(find.text('Puppy Progress'), findsOneWidget);
+    expect(find.text('Progress & Stats Overview'), findsOneWidget);
+    expect(find.text('Games Played'), findsOneWidget);
+    expect(find.text('Levels Completed'), findsOneWidget);
+    expect(find.text('Day Streak'), findsOneWidget);
+
+    // Verify streaks section
+    expect(find.text('Streak Stats'), findsOneWidget);
+    expect(find.text('Current Streak'), findsOneWidget);
+    expect(find.text('Best Streak'), findsOneWidget);
+
+    // Verify milestone achievements
+    expect(find.text('Milestone Achievements'), findsOneWidget);
+    expect(find.text('Puppy Steps'), findsOneWidget);
+    expect(find.text('Good Dog'), findsOneWidget);
+    expect(find.text('Top Dog Champion'), findsOneWidget);
+
+    // Verify completion history section
+    expect(find.text('Level Completion History'), findsOneWidget);
+    expect(find.textContaining('Puppy Park'), findsOneWidget);
+  });
+
+  testWidgets('Home header settings icon opens SettingsScreen', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const ProviderScope(
+        child: SnapDogApp(),
+      ),
+    );
+
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Tap settings icon in header (tooltip: 'Settings')
+    final settingsIconFinder = find.byTooltip('Settings');
+    expect(settingsIconFinder, findsOneWidget);
+    await tester.tap(settingsIconFinder);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.byType(SettingsScreen), findsOneWidget);
+    expect(find.text('Puppy Settings'), findsOneWidget);
+    expect(find.text('Feedback & Senses'), findsOneWidget);
   });
 
   testWidgets('Navigation to GameScreen and interactive board controls', (WidgetTester tester) async {

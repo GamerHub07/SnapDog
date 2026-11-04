@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../shared/widgets/dog_avatar.dart';
 import '../models/dog_breed.dart';
 import '../providers/game_provider.dart';
 
@@ -94,79 +95,13 @@ class _DogPreviewAvatar extends StatelessWidget {
             : null,
       ),
       child: Center(
-        child: SizedBox(
-          width: size,
-          height: size,
-          child: Opacity(
-            opacity: isPlaced ? 1.0 : 0.35,
-            child: CustomPaint(
-              size: Size(size, size),
-              painter: _PreviewAvatarPainter(
-                breed: breed,
-                isSilhouette: !isPlaced,
-              ),
-            ),
-          ),
+        child: DogAvatar(
+          breed: breed,
+          size: size,
+          isSilhouette: !isPlaced,
         ),
       ),
     );
   }
 }
 
-class _PreviewAvatarPainter extends CustomPainter {
-  final DogBreed breed;
-  final bool isSilhouette;
-
-  const _PreviewAvatarPainter({
-    required this.breed,
-    required this.isSilhouette,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-
-    final primaryColor = isSilhouette ? const Color(0xFF7A6456) : breed.primaryColor;
-    final earColor = isSilhouette ? const Color(0xFF7A6456) : breed.accentColor;
-
-    // Ears
-    canvas.drawCircle(Offset(w * 0.22, h * 0.26), w * 0.16, Paint()..color = earColor);
-    canvas.drawCircle(Offset(w * 0.78, h * 0.26), w * 0.16, Paint()..color = earColor);
-
-    // Head
-    final headRect = Rect.fromCenter(
-      center: Offset(w * 0.5, h * 0.54),
-      width: w * 0.72,
-      height: h * 0.64,
-    );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(headRect, Radius.circular(w * 0.32)),
-      Paint()..color = primaryColor,
-    );
-
-    if (!isSilhouette) {
-      // White muzzle
-      final muzzleRect = Rect.fromCenter(
-        center: Offset(w * 0.5, h * 0.64),
-        width: w * 0.46,
-        height: h * 0.30,
-      );
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(muzzleRect, Radius.circular(w * 0.14)),
-        Paint()..color = const Color(0xFFFFF7ED),
-      );
-
-      // Eyes & Nose
-      const darkColor = Color(0xFF382319);
-      final eyeRadius = w * 0.055;
-      canvas.drawCircle(Offset(w * 0.36, h * 0.48), eyeRadius, Paint()..color = darkColor);
-      canvas.drawCircle(Offset(w * 0.64, h * 0.48), eyeRadius, Paint()..color = darkColor);
-      canvas.drawCircle(Offset(w * 0.50, h * 0.62), w * 0.045, Paint()..color = darkColor);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _PreviewAvatarPainter oldDelegate) =>
-      oldDelegate.breed != breed || oldDelegate.isSilhouette != isSilhouette;
-}

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/constants/app_assets.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../shared/widgets/paw_icon.dart';
 import '../../onboarding/widgets/tutorial_dialog.dart';
@@ -27,6 +28,14 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
   void initState() {
     super.initState();
     _checkFirstLaunchOnboarding();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    for (final asset in AppAssets.allDogAssets) {
+      precacheImage(AssetImage(asset), context);
+    }
   }
 
   void _checkFirstLaunchOnboarding() async {
@@ -77,7 +86,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                   index: 1,
                   icon: const Icon(Icons.bar_chart_rounded, size: 24, color: AppColors.textMuted),
                   activeIcon: const Icon(Icons.bar_chart_rounded, size: 24, color: AppColors.primaryDark),
-                  label: 'Stats',
+                  label: 'Progress',
                 ),
                 _buildNavItem(
                   index: 2,

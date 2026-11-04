@@ -5,54 +5,57 @@ import 'puzzle.dart';
 
 /// Available 3D clay dog breeds for SnapDog.
 enum DogBreed {
+  beagle(
+    id: 'beagle',
+    displayName: 'Beagle',
+    primaryColor: Color(0xFFDDA15E),
+    accentColor: Color(0xFFBC6C25),
+    assetPath: AppAssets.beagle,
+  ),
   corgi(
     id: 'corgi',
     displayName: 'Corgi',
     primaryColor: Color(0xFFF4A261),
     accentColor: Color(0xFFE76F51),
-    assetPath: AppAssets.corgiNeutral,
-  ),
-  shibaInu(
-    id: 'shiba_inu',
-    displayName: 'Shiba Inu',
-    primaryColor: Color(0xFFE07A5F),
-    accentColor: Color(0xFFD45138),
-    assetPath: null, // High-quality vector placeholder
-  ),
-  pug(
-    id: 'pug',
-    displayName: 'Pug',
-    primaryColor: Color(0xFFD4A373),
-    accentColor: Color(0xFF382319),
-    assetPath: null, // High-quality vector placeholder
-  ),
-  husky(
-    id: 'husky',
-    displayName: 'Husky',
-    primaryColor: Color(0xFF90A4AE),
-    accentColor: Color(0xFF455A64),
-    assetPath: null, // High-quality vector placeholder
+    assetPath: AppAssets.corgi,
   ),
   goldenRetriever(
     id: 'golden_retriever',
     displayName: 'Golden Retriever',
     primaryColor: Color(0xFFEEBA4C),
     accentColor: Color(0xFFC78B1D),
-    assetPath: null, // High-quality vector placeholder
+    assetPath: AppAssets.goldenRetriever,
   ),
-  beagle(
-    id: 'beagle',
-    displayName: 'Beagle',
-    primaryColor: Color(0xFFDDA15E),
-    accentColor: Color(0xFFBC6C25),
-    assetPath: null, // High-quality vector placeholder
+  husky(
+    id: 'husky',
+    displayName: 'Husky',
+    primaryColor: Color(0xFF90A4AE),
+    accentColor: Color(0xFF455A64),
+    assetPath: AppAssets.husky,
+  ),
+  labrador(
+    id: 'labrador',
+    displayName: 'Labrador Retriever',
+    primaryColor: Color(0xFFE07A5F),
+    accentColor: Color(0xFFD45138),
+    assetPath: AppAssets.labrador,
+  ),
+  pug(
+    id: 'pug',
+    displayName: 'Pug',
+    primaryColor: Color(0xFFD4A373),
+    accentColor: Color(0xFF382319),
+    assetPath: AppAssets.pug,
   );
+
+  /// Backwards-compatible alias for previously used shibaInu placeholder.
+  static const DogBreed shibaInu = DogBreed.labrador;
 
   final String id;
   final String displayName;
   final Color primaryColor;
   final Color accentColor;
-  final String? assetPath;
+  final String assetPath;
 
   const DogBreed({
     required this.id,
@@ -62,7 +65,7 @@ enum DogBreed {
     required this.assetPath,
   });
 
-  bool get hasRasterAsset => assetPath != null;
+  bool get hasRasterAsset => true;
 }
 
 /// Helper that deterministically maps puzzle placements to dog breeds.

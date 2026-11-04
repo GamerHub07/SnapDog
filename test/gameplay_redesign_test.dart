@@ -60,7 +60,7 @@ void main() {
       final uniqueBreeds = assignment.orderedBreeds.toSet();
 
       expect(uniqueBreeds.contains(DogBreed.corgi), isTrue);
-      expect(uniqueBreeds.contains(DogBreed.shibaInu), isTrue);
+      expect(uniqueBreeds.contains(DogBreed.labrador), isTrue);
       expect(uniqueBreeds.contains(DogBreed.pug), isTrue);
       expect(uniqueBreeds.contains(DogBreed.husky), isTrue);
       expect(uniqueBreeds.contains(DogBreed.goldenRetriever), isTrue);

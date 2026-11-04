@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../shared/widgets/confetti_celebration.dart';
+import '../../../shared/widgets/dog_avatar.dart';
 import '../../../shared/widgets/dog_mascot.dart';
 import '../../../shared/widgets/snap_dog_button.dart';
+import '../../game/models/dog_breed.dart';
 import '../models/daily_challenge_record.dart';
 import '../services/daily_share_helper.dart';
 
@@ -121,7 +123,21 @@ class _DailyCompletionScreenState extends State<DailyCompletionScreen> {
                   style: AppTextStyles.bodySmall,
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 12),
+
+                // Celebratory 3D Dog Avatars
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  alignment: WrapAlignment.center,
+                  children: DogBreed.values.map((breed) {
+                    return DogAvatar.circularBadge(
+                      breed: breed,
+                      size: 34,
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 20),
 
                 // Newly Unlocked Milestone Banner
                 if (widget.newlyUnlockedRewards.isNotEmpty) ...[

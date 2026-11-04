@@ -19,28 +19,28 @@ class AppColors {
   static const Color cardBorder = Color(0xFFF0E5D8);
   static const Color surfaceElevated = Color(0xFFFFFBF6);
 
-  // 10 Distinct Pastel Region Colors
+  // 10 Distinct Pastel Region Colors (Refined contrast palette)
   static const List<Color> regionColors = [
-    Color(0xFFFFD6C9), // 0: Pastel Coral / Peach
-    Color(0xFFFFF2B2), // 1: Pastel Buttercup Yellow
-    Color(0xFFCBEBC4), // 2: Pastel Sage Mint
-    Color(0xFFC7E4F8), // 3: Pastel Sky Blue
-    Color(0xFFE5D7F4), // 4: Pastel Lavender
-    Color(0xFFFFD4E2), // 5: Pastel Blossom Pink
-    Color(0xFFFFE3C2), // 6: Pastel Warm Apricot
-    Color(0xFFBFECE3), // 7: Pastel Fresh Seafoam
-    Color(0xFFD6DEF7), // 8: Pastel Periwinkle
-    Color(0xFFF3E8D7), // 9: Pastel Warm Linen
+    Color(0xFFC9E8C7), // 0: Soft mint
+    Color(0xFFBFDDF2), // 1: Sky blue
+    Color(0xFFFFD8B8), // 2: Warm peach
+    Color(0xFFD9D0F0), // 3: Lavender
+    Color(0xFFF4C9D9), // 4: Soft pink
+    Color(0xFFF6E7A9), // 5: Butter yellow
+    Color(0xFFB9E5DF), // 6: Aqua
+    Color(0xFFF2C2B4), // 7: Light coral
+    Color(0xFFC9D3F2), // 8: Periwinkle
+    Color(0xFFDDE9B5), // 9: Pale lime
   ];
 
   // Board & Grid Line Colors
   static const Color boardBackground = Color(0xFFFFFFFF);
-  static const Color gridLineThin = Color(0x3849352B);
-  static const Color regionBorderThick = Color(0xFF5A4135);
+  static const Color gridLineThin = Color(0x389B7C68);
+  static const Color regionBorderThick = Color(0xFF9B7C68);
 
   // Highlighting & State Colors
-  static const Color cellSelected = Color(0x59F4A261);
-  static const Color cellHighlight = Color(0x28F4A261);
+  static const Color cellSelected = Color(0x38FFFFFF);
+  static const Color cellHighlight = Color(0x24FFFFFF);
   static const Color clashRed = Color(0xFFE63946);
   static const Color clashBackground = Color(0xFFFFD2D5);
 

@@ -50,8 +50,9 @@ void main() {
     // Verify subtle decorative background elements are present
     expect(find.byType(HomeBackgroundDecorations), findsOneWidget);
 
-    // Verify LatestCompletedChallengeCard is present in Home screen
-    expect(find.byType(LatestCompletedChallengeCard), findsOneWidget);
+    // Verify only one completed challenge card (DailyChallengeCard) is present in Home screen
+    expect(find.byType(DailyChallengeCard), findsOneWidget);
+    expect(find.byType(LatestCompletedChallengeCard), findsNothing);
 
     // Tap Play Levels button to open PuzzleSelectionScreen
     await tester.tap(find.text('Play Levels'));

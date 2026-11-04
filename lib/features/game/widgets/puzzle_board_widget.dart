@@ -236,7 +236,7 @@ class _PuzzleBoardWidgetState extends ConsumerState<PuzzleBoardWidget> {
             decoration: BoxDecoration(
               color: AppColors.card,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.regionBorderThick, width: 2.5),
+              border: Border.all(color: AppColors.regionBorderThick, width: 2.4),
               boxShadow: const [
                 BoxShadow(
                   color: AppColors.shadowWarm,
@@ -392,11 +392,9 @@ class _PuzzleCellWidget extends ConsumerWidget {
       puzzleGameProvider.select((state) {
         final selected = state.selectedCell;
         final isSelected = selected != null && selected.x == row && selected.y == col;
-        final selectedRegion = selected != null ? puzzle.getRegionAt(selected.x, selected.y) : null;
         final isSameRow = selected != null && selected.x == row;
         final isSameCol = selected != null && selected.y == col;
-        final isSameRegion = selectedRegion != null && regionId == selectedRegion;
-        final isHighlighted = !isSelected && (isSameRow || isSameCol || isSameRegion);
+        final isHighlighted = !isSelected && (isSameRow || isSameCol);
 
         return _CellVisualState(
           hasDog: state.hasDogAt(row, col),
@@ -492,9 +490,11 @@ class _CellView extends StatelessWidget {
     } else if (cellState.isHint && !cellState.hasDog) {
       cellBg = Color.lerp(regionColor, const Color(0xFFFFF4D0), 0.70)!;
     } else if (cellState.isSelected) {
-      cellBg = Color.lerp(regionColor, Colors.white, 0.45)!;
+      // Subtle background tint for selected cell
+      cellBg = Color.lerp(regionColor, Colors.white, 0.40)!;
     } else if (cellState.isHighlighted) {
-      cellBg = Color.lerp(regionColor, Colors.white, 0.28)!;
+      // Subtle background tint for row & column highlight
+      cellBg = Color.lerp(regionColor, Colors.white, 0.18)!;
     }
 
     // Immediate tactile feedback on touch down
@@ -502,32 +502,47 @@ class _CellView extends StatelessWidget {
       cellBg = Color.lerp(cellBg, Colors.black, 0.08)!;
     }
 
-    // Border styling: Thick for region boundaries, clean thin for internal cells
-    const thickBorder = BorderSide(color: AppColors.regionBorderThick, width: 2.2);
-    const thinBorder = BorderSide(color: AppColors.gridLineThin, width: 0.6);
+    // Border styling: Medium-strength muted brown for region boundaries, clean thin for internal cells
+    const boundaryBorder = BorderSide(color: AppColors.regionBorderThick, width: 2.2);
+    const thinBorder = BorderSide(color: AppColors.gridLineThin, width: 0.8);
+
+    // Consistent single-edge border rendering avoids thick double borders where regions meet
+    final cellBorder = Border(
+      bottom: row < 9 ? (isBottomDiff ? boundaryBorder : thinBorder) : BorderSide.none,
+      right: col < 9 ? (isRightDiff ? boundaryBorder : thinBorder) : BorderSide.none,
+    );
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 140),
+      curve: Curves.easeOutCubic,
       decoration: BoxDecoration(
         color: cellBg,
-        border: Border(
-          top: isTopDiff ? thickBorder : thinBorder,
-          bottom: isBottomDiff ? thickBorder : thinBorder,
-          left: isLeftDiff ? thickBorder : thinBorder,
-          right: isRightDiff ? thickBorder : thinBorder,
-        ),
+        border: cellBorder,
       ),
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Selected cell prominent indicator ring
+          // Subtle translucent overlay for highlighted row and column
+          if (cellState.isHighlighted)
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.12),
+                ),
+              ),
+            ),
+
+          // Gentle selection highlight for selected cell (gentle luminous overlay & soft highlight border, NO RED)
           if (cellState.isSelected)
             Positioned.fill(
-              child: Container(
-                margin: const EdgeInsets.all(1.5),
+              child: DecoratedBox(
                 decoration: BoxDecoration(
-                  border: Border.all(color: AppColors.primaryDark, width: 2.2),
+                  color: Colors.white.withValues(alpha: 0.20),
                   borderRadius: BorderRadius.circular(4),
+                  border: Border.all(
+                    color: const Color(0xCCFFFFFF), // Soft luminous highlight
+                    width: 1.5,
+                  ),
                 ),
               ),
             ),

@@ -16,7 +16,6 @@ import '../../settings/screens/settings_screen.dart';
 import '../widgets/daily_challenge_card.dart';
 import '../widgets/home_decorations.dart';
 import '../widgets/home_dog_face_row.dart';
-import '../widgets/latest_completed_challenge_card.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -323,9 +322,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       );
                     },
                   ),
-
-                  // Latest Completed Challenge Card
-                  const LatestCompletedChallengeCard(),
 
                   const SizedBox(height: 24),
                 ],

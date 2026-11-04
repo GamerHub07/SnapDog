@@ -1,89 +1,94 @@
-# SnapDog – Integrate 3D Clay Dog Artwork
+# SnapDog – Loading Screen & Board Border Refinement
 
-Integrate the six new dog-face PNG illustrations located in `assets/images/dogs/` throughout the existing SnapDog Flutter application.
+Make only the following targeted changes. Preserve the existing layouts and functionality.
 
-IMPORTANT: I will manually add the images to this folder. Do not generate, download, modify, or replace any artwork. Use the exact supplied PNG files.
+## 1. Region Boundary Borders
 
-## 1. Dog Asset Mapping
+The latest region borders have become too light and difficult to distinguish.
 
-Inspect the images and map them to these breeds:
+Adjust them to a medium-strength muted brown.
 
-- `beagle.png` – Beagle
-- `labrador.png` – Labrador Retriever
-- `golden_retriever.png` – Golden Retriever
-- `husky.png` – Husky
-- `pug.png` – Pug
-- `corgi.png` – Corgi
+Suggested styling:
+- Region boundary color: #A88A76 or #9B7C68.
+- Region boundary thickness: approximately 2–2.5 logical pixels.
+- Ordinary cell grid lines should remain thinner and lighter.
+- Avoid thick double borders where regions meet.
 
-If the filenames differ, identify the images by their appearance and map them correctly. Do not rename or overwrite user assets without permission.
+The borders should be clearly visible at normal phone viewing size without dominating the pastel board.
 
-## 2. Flutter Asset Configuration
+Do not change the region color palette.
 
-- Register `assets/images/dogs/` in `pubspec.yaml`.
-- Verify all six files are accessible.
-- Precache dog images where appropriate.
-- Check whether PNGs have transparent backgrounds. If any have opaque black backgrounds, report this instead of displaying unwanted black rectangles or attempting destructive edits.
+## 2. Loading Quote Typography
 
-## 3. Create a Reusable DogAvatar Widget
+The loading quote currently looks too small.
 
-Create a reusable widget that accepts:
-- Dog breed or asset path.
-- Image size.
-- Optional circular background.
-- Optional border.
-- Optional animation.
+Improve it:
+- Increase quote font size to approximately 25–30 logical pixels, adapting to screen size.
+- Use a friendly, rounded font with medium or semibold weight.
+- Use a warm dark-brown or muted coral color.
+- Center-align the quote.
+- Keep sufficient line spacing.
+- Support longer quotes with graceful wrapping.
+- Avoid clipping on smaller devices.
+
+The quote should be the main visual focus of the loading screen.
+
+## 3. Fix Blank/Black Startup Before Loading Screen
+
+Currently, the app shows a blank or black screen for several seconds before the loading screen appears briefly.
+
+This must be fixed.
+
+Investigate the actual Android and Flutter startup lifecycle.
 
 Requirements:
-- Use `BoxFit.contain`, not `BoxFit.cover`.
-- Preserve the entire dog face, including ears.
-- Avoid stretching or cropping.
-- Maintain consistent visual sizing across breeds.
-- Support transparent backgrounds.
 
-## 4. Replace Existing Dog Artwork
+1. Configure the Android native launch screen/splash screen to use the same warm cream background as SnapDog.
+2. Show the SnapDog loading screen as the very first Flutter frame.
+3. Display the logo, quote and loading indicator immediately after Flutter starts.
+4. Start asynchronous initialization only after the loading screen is visible.
+5. Keep the loading screen visible while required initialization runs.
+6. Navigate to Home only after essential startup tasks finish.
 
-Replace the old dog illustrations in:
+Inspect:
+- Android launch theme.
+- Android splash screen configuration.
+- Flutter main() and runApp().
+- Any initialization performed before runApp().
+- Asset loading and precaching.
+- Audio and local storage initialization.
 
-- Home screen dog collection.
-- Gameplay dog progress indicators.
-- Correctly placed dogs on the puzzle board.
-- Level-completion screen.
-- Any other existing dog avatar locations.
+Do not perform long synchronous operations before runApp().
 
-Keep the existing UI layouts, colors, spacing, and interactions unchanged.
+If an essential initialization task must happen before Flutter starts, ensure the Android native splash screen remains visible throughout that period.
 
-## 5. Breed Assignment
+## 4. Smooth Transition
 
-- Assign dog breeds automatically to the 10 dog placements.
-- Use all six breeds, allowing repeats.
-- Make assignments deterministic for a given puzzle so the same puzzle displays the same breeds.
-- Keep breeds purely visual; they must not affect puzzle validation or solutions.
-- Ensure the same placement retains its assigned breed throughout gameplay.
+- Use a subtle fade transition from native splash to Flutter loading screen.
+- Avoid showing a black frame between them.
+- Avoid a flash of the Home screen before initialization finishes.
+- Do not add an artificial loading delay.
+- Keep the loading screen visible for the actual duration of initialization.
+- Once initialization is complete, transition smoothly to Home.
 
-## 6. Performance
+## 5. Validation
 
-- Use image caching and precaching appropriately.
-- Avoid loading the same image repeatedly.
-- Ensure smooth scrolling and board interactions.
-- Do not introduce unnecessary widget rebuilds.
+Test:
+- Cold launch after force-stopping the app.
+- First launch after installation.
+- Subsequent launches.
+- Slow initialization.
+- Loading failures.
+- Different Android screen sizes.
 
-## 7. Validation
-
-Test all six breeds on:
-- Home screen.
-- Gameplay board.
-- Dog progress indicator.
-- Completion screen.
+Verify that there is no blank or black interval before the loading screen.
 
 Run:
 
-```bash
-flutter pub get
 flutter test
 flutter analyze
 flutter build apk --debug
-```
 
-At the end, report the asset mapping, files modified, and any image transparency issues.
+Report what caused the startup delay and exactly how it was fixed.
 
-Do not change puzzle logic, progression, or the approved UI design.
+Do not change any other UI or gameplay functionality.

@@ -30,6 +30,7 @@ class CuteDogCharacter extends StatelessWidget {
         width: size,
         height: size,
         fit: BoxFit.contain,
+        gaplessPlayback: true,
         filterQuality: FilterQuality.medium,
         errorBuilder: (context, error, stackTrace) {
           // Robust fallback for headless tests or environments without asset bundle

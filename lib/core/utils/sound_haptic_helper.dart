@@ -1,26 +1,25 @@
 import 'package:flutter/services.dart';
+import '../services/sound_service.dart';
 
 /// Helper for haptics and game audio cues throughout SnapDog.
 class SoundHapticHelper {
   SoundHapticHelper._();
 
   static bool hapticsEnabled = true;
-  static bool soundEnabled = true;
 
-  // --- Sound Effects ---
+  static bool get soundEnabled => SoundService.instance.soundEnabled;
+  static set soundEnabled(bool value) => SoundService.instance.setSoundEnabled(value);
+
+  // --- Sound Effects & Haptics ---
 
   /// Played on interactive button taps
   static void buttonClick() {
-    if (soundEnabled) {
-      SystemSound.play(SystemSoundType.click);
-    }
+    SoundService.instance.playButtonSound();
   }
 
-  /// Played when placing a dog on the board
+  /// Played when placing a dog correctly on the board
   static void dogPlace() {
-    if (soundEnabled) {
-      SystemSound.play(SystemSoundType.click);
-    }
+    SoundService.instance.playCorrectPlacementSound();
     if (hapticsEnabled) {
       HapticFeedback.lightImpact();
     }
@@ -28,9 +27,7 @@ class SoundHapticHelper {
 
   /// Played when marking or unmarking a cross (×)
   static void crossMark() {
-    if (soundEnabled) {
-      SystemSound.play(SystemSoundType.click);
-    }
+    SoundService.instance.playCrossSound();
     if (hapticsEnabled) {
       HapticFeedback.selectionClick();
     }
@@ -38,9 +35,7 @@ class SoundHapticHelper {
 
   /// Played when removing a dog from the board
   static void dogRemove() {
-    if (soundEnabled) {
-      SystemSound.play(SystemSoundType.click);
-    }
+    SoundService.instance.playUndoSound();
     if (hapticsEnabled) {
       HapticFeedback.selectionClick();
     }
@@ -48,9 +43,7 @@ class SoundHapticHelper {
 
   /// Played on invalid placement or rule conflict
   static void invalidPlacement() {
-    if (soundEnabled) {
-      SystemSound.play(SystemSoundType.alert);
-    }
+    SoundService.instance.playWrongPlacementSound();
     if (hapticsEnabled) {
       HapticFeedback.heavyImpact();
     }
@@ -58,9 +51,7 @@ class SoundHapticHelper {
 
   /// Played when requesting a hint
   static void hintUsed() {
-    if (soundEnabled) {
-      SystemSound.play(SystemSoundType.click);
-    }
+    SoundService.instance.playHintSound();
     if (hapticsEnabled) {
       HapticFeedback.selectionClick();
     }
@@ -68,9 +59,7 @@ class SoundHapticHelper {
 
   /// Played on puzzle completion victory
   static void puzzleCompleted() {
-    if (soundEnabled) {
-      SystemSound.play(SystemSoundType.click);
-    }
+    SoundService.instance.playCompletionSound();
     if (hapticsEnabled) {
       HapticFeedback.mediumImpact();
     }
@@ -78,9 +67,7 @@ class SoundHapticHelper {
 
   /// Played on undo action
   static void undoAction() {
-    if (soundEnabled) {
-      SystemSound.play(SystemSoundType.click);
-    }
+    SoundService.instance.playUndoSound();
     if (hapticsEnabled) {
       HapticFeedback.selectionClick();
     }

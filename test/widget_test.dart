@@ -62,6 +62,12 @@ void main() {
 
     expect(find.text('A little pup belongs here!'), findsOneWidget);
 
+    // Dismiss the Hint overlay dialog via Got it button
+    if (find.text('Got it').evaluate().isNotEmpty) {
+      await tester.tap(find.text('Got it'));
+      await tester.pumpAndSettle();
+    }
+
     // Tap Reset button to open confirmation dialog
     await tester.tap(find.text('Reset'));
     await tester.pump();

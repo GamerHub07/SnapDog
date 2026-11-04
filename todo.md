@@ -1,132 +1,96 @@
-# SnapDog – Gameplay Dialog Fix & Audio Effects
+# SnapDog – Step 2: Drag-to-Cross Multi-Cell Interaction
 
-Implement the following improvements in the existing Flutter application.
+Introduce a drag gesture that allows players to mark multiple cells with crosses in a single continuous movement.
 
-Preserve all existing gameplay logic, visual identity, puzzle progression, dog locking, three-mistake limit, hints, and haptic feedback.
+IMPORTANT: Extend the existing gameplay controller and gesture system. Do not duplicate cell interaction logic.
 
-## A. Fix Board Layout Shifting
+## 1. Expected behavior
 
-Currently, displaying the mistake or hint dialog causes the game board to shift down.
+When the player touches an empty cell and drags their finger across the board:
 
-Investigate and fix the root cause.
+- The initial empty cell should receive an X.
+- Every subsequent empty cell entered by the finger should also receive an X.
+- The X should appear immediately as the finger moves across cells.
+- The gesture should work horizontally, vertically, and diagonally.
+- Each cell should be processed at most once during one drag gesture.
 
-Requirements:
-- Display dialogs as overlays above the gameplay screen.
-- Use Flutter showDialog or an appropriate overlay mechanism.
-- Never insert dialogs into the normal gameplay Column or widget layout.
-- Keep the board in exactly the same position and size before, during, and after the dialog.
-- Add a subtle background barrier.
-- Prevent multiple dialogs from opening simultaneously.
-- Do not rebuild or resize the board unnecessarily when dialogs appear.
+Example:
 
-## B. Create a Polished Mistake Popup
+If the player drags across five empty cells, all five should receive X markers.
 
-Replace the existing basic mistake popup with a custom animated dialog.
+## 2. Cell restrictions
 
-Design:
-- Warm cream background.
-- Rounded corners.
-- Soft shadow.
-- Small sad 3D clay Corgi illustration.
-- Heading: "Oops! Wrong Spot"
-- Message: "That isn't the right place for this puppy."
-- Mistake counter, e.g. 1/3.
-- One "Got it" button.
+- Empty cells: Mark with X.
+- Cells already containing X: Do not duplicate the X.
+- Cells containing dogs: Never replace or remove the dog.
+- Correct locked dogs: Never modify them.
+- Incorrect placements must not be introduced through dragging.
 
-Animation:
-- Smooth fade-in.
-- Scale from approximately 0.85 to 1.0.
-- Gentle shake or bounce on the Corgi.
-- Smooth fade-out when dismissed.
+Dragging must ONLY mark crosses. It must never place dogs.
 
-Important:
-- The dialog must not shift the board.
-- Preserve the existing three-mistake behavior.
-- The third mistake should show the existing Game Over dialog instead of an ordinary mistake dialog.
-- Do not increment mistakes again when the dialog is dismissed.
+## 3. Gesture recognition
 
-## C. Improve Hint Dialog
-
-- Use the same overlay approach.
-- Keep the board stationary.
-- Use a small thinking Corgi illustration.
-- Add a gentle fade-and-scale animation.
-- Preserve the existing hint logic and hint counter.
-
-## D. Implement Actual Sound Effects
-
-Currently haptic feedback works, but audio effects are missing.
-
-Use audioplayers or another appropriate lightweight Flutter audio package.
-
-Bundle short audio assets locally. Do not fetch audio from the internet during gameplay.
-
-Add these sound effects:
-
-1. Cross marking: soft pop/click.
-2. Correct dog placement: pleasant confirmation chime.
-3. Wrong dog placement: gentle descending bloop.
-4. Dog removal/undo: soft reverse pop.
-5. Hint usage: magical sparkle sound.
-6. Puzzle completion: cheerful celebration sound.
-7. Button interactions: subtle UI click.
-
-Use appropriate short WAV, MP3, or OGG files.
-
-If suitable sound assets do not already exist, source properly licensed assets or create original sound effects. Do not use copyrighted game sounds.
-
-## E. Audio Settings
-
-Update the existing settings screen.
-
-Add:
-- Sound Effects: ON/OFF.
-- Sound volume slider (0–100%).
+Implement reliable gesture handling without breaking existing interactions.
 
 Requirements:
-- Persist preferences locally.
-- Sound should respect the master toggle and volume.
-- Muting audio must not disable haptic feedback.
-- Haptic settings must remain independent.
-- Do not play sound effects when the app is muted.
-- Dispose audio resources correctly.
+- A normal single tap should continue marking or toggling X.
+- A double tap should continue placing a dog.
+- A drag should mark multiple cells.
+- Moving the finger should not trigger individual tap or double-tap actions.
+- Starting a drag should not accidentally place a dog.
+- Use appropriate pointer or gesture tracking to distinguish tapping from dragging.
+- Account for small finger movements using a reasonable touch slop threshold.
+- Prevent repeated processing of the same cell during one gesture.
 
-## F. Audio Architecture
+## 4. Undo behavior
 
-Create a dedicated AudioManager or SoundService.
+Treat the entire drag operation as ONE undoable action.
 
-Gameplay widgets and controllers should call methods such as:
-- playCrossSound()
-- playCorrectPlacementSound()
-- playWrongPlacementSound()
-- playHintSound()
-- playCompletionSound()
-- playButtonSound()
+Example:
+- Player drags across 6 cells.
+- Six X markers are added.
+- Player presses Undo.
+- All six X markers from that drag are removed together.
 
-Avoid placing audio playback logic directly inside UI widgets.
+If a drag crosses cells that already contain X markers or dogs, only newly added X markers should be included in the undo action.
 
-Prevent overlapping sounds from creating unpleasant audio.
+Undo must not affect existing dogs or previous crosses.
 
-## G. Testing
+## 5. Visual feedback
 
-Test:
-- Mistake dialog does not change board position.
-- Hint dialog does not change board position.
-- Dialog animations do not interfere with gestures.
-- Repeated taps cannot open duplicate dialogs.
-- Correct sound plays only for correct placements.
-- Wrong sound plays for incorrect placements.
-- Sound toggle works.
-- Volume setting works.
-- Audio preferences persist after restart.
-- Muting sound does not disable haptics.
-- Existing gameplay and mistake-limit tests still pass.
+- Show X markers immediately as cells are crossed.
+- Use a smooth, lightweight pop-in animation.
+- Highlight the currently touched cell subtly.
+- Keep the X size and style consistent with existing markers.
+- Avoid lag while dragging quickly across multiple cells.
 
-Run:
-flutter pub get
-flutter test
-flutter analyze
+## 6. State management
 
-Fix all errors and warnings introduced by this implementation.
+- Track the current drag gesture.
+- Track cells visited during the gesture.
+- Track only newly added crosses for undo.
+- Commit the complete drag action to undo history when the gesture ends.
+- Clear temporary gesture state when the pointer is released or canceled.
 
-Finally, provide a summary of the root cause of the board shift, audio assets added, packages introduced, and files changed.
+## 7. Testing
+
+Add tests for:
+- Horizontal dragging.
+- Vertical dragging.
+- Diagonal dragging.
+- Fast dragging across multiple cells.
+- No duplicate X markers.
+- Existing X markers remain unchanged.
+- Dog cells remain untouched.
+- Locked dogs remain protected.
+- Dragging never places dogs.
+- One drag produces one undo action.
+- Undo restores the correct previous state.
+- Drag cancellation behaves safely.
+- Single and double taps continue working.
+
+Run flutter test and flutter analyze.
+
+Test the final interaction on a physical Android device.
+
+Do not redesign the screen or change any existing puzzle rules.

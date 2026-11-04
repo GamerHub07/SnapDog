@@ -118,7 +118,9 @@ class PuzzleGameState {
   }) {
     final nextPlacements = placements ?? this.placements;
     final nextPuzzle = puzzle ?? this.puzzle;
-    final nextClashes = PuzzleValidator.findClashingPlacements(nextPuzzle, nextPlacements);
+    final nextClashes = (placements != null || puzzle != null)
+        ? PuzzleValidator.findClashingPlacements(nextPuzzle, nextPlacements)
+        : clashingPlacements;
 
     return PuzzleGameState(
       puzzle: nextPuzzle,

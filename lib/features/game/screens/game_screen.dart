@@ -6,6 +6,8 @@ import '../providers/game_provider.dart';
 import '../widgets/game_controls.dart';
 import '../widgets/game_header.dart';
 import '../widgets/game_over_dialog.dart';
+import '../widgets/hint_dialog.dart';
+import '../widgets/mistake_dialog.dart';
 import '../widgets/pause_dialog.dart';
 import '../widgets/puzzle_board_widget.dart';
 import '../../daily_challenge/models/daily_challenge_record.dart';
@@ -36,6 +38,8 @@ class _GameScreenState extends ConsumerState<GameScreen> {
 
   bool _isExitDialogOpen = false;
   bool _isExiting = false;
+  bool _isMistakeDialogOpen = false;
+  bool _isHintDialogOpen = false;
 
   void _confirmExit() {
     if (_isExitDialogOpen || _isExiting) return;
@@ -118,6 +122,80 @@ class _GameScreenState extends ConsumerState<GameScreen> {
   @override
   Widget build(BuildContext context) {
     final gameState = ref.watch(puzzleGameProvider);
+
+    ref.listen<PuzzleGameState>(puzzleGameProvider, (previous, next) {
+      if (previous != null) {
+        // Trigger mistake popup if mistake count increased, it is not Game Over,
+        // and no dialog is currently open.
+        if (next.mistakes > previous.mistakes &&
+            !next.isGameOver &&
+            !_isMistakeDialogOpen &&
+            !_isExitDialogOpen &&
+            !_isExiting) {
+          _isMistakeDialogOpen = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            MistakeDialog.show(
+              context,
+              mistakes: next.mistakes,
+              message: next.contextualMessage,
+              onDismissed: () {
+                if (mounted) {
+                  setState(() {
+                    _isMistakeDialogOpen = false;
+                  });
+                } else {
+                  _isMistakeDialogOpen = false;
+                }
+              },
+            ).then((_) {
+              if (mounted) {
+                setState(() {
+                  _isMistakeDialogOpen = false;
+                });
+              } else {
+                _isMistakeDialogOpen = false;
+              }
+            });
+          });
+        }
+
+        // Trigger hint popup if hint count increased, it is not Game Over,
+        // and no dialog is currently open.
+        if (next.hintsUsed > previous.hintsUsed &&
+            !next.isGameOver &&
+            !_isHintDialogOpen &&
+            !_isExitDialogOpen &&
+            !_isExiting) {
+          _isHintDialogOpen = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            HintDialog.show(
+              context,
+              hintsUsed: next.hintsUsed,
+              message: next.contextualMessage,
+              onDismissed: () {
+                if (mounted) {
+                  setState(() {
+                    _isHintDialogOpen = false;
+                  });
+                } else {
+                  _isHintDialogOpen = false;
+                }
+              },
+            ).then((_) {
+              if (mounted) {
+                setState(() {
+                  _isHintDialogOpen = false;
+                });
+              } else {
+                _isHintDialogOpen = false;
+              }
+            });
+          });
+        }
+      }
+    });
 
     _recordDailyIfCompleted(gameState);
 

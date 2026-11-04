@@ -179,6 +179,63 @@ class SettingsScreen extends ConsumerWidget {
                         SoundHapticHelper.dogPlace();
                       },
                     ),
+                    if (settings.soundEnabled) ...[
+                      const Divider(height: 1, indent: 20, endIndent: 20, color: AppColors.cardBorder),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      settings.soundVolume == 0
+                                          ? Icons.volume_mute_rounded
+                                          : Icons.volume_down_rounded,
+                                      size: 20,
+                                      color: AppColors.primary,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Text('Sound Volume', style: AppTextStyles.bodyMedium),
+                                  ],
+                                ),
+                                Text(
+                                  '${(settings.soundVolume * 100).round()}%',
+                                  style: AppTextStyles.bodySmall.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.primaryDark,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SliderTheme(
+                              data: SliderTheme.of(context).copyWith(
+                                activeTrackColor: AppColors.primary,
+                                inactiveTrackColor: AppColors.primary.withValues(alpha: 0.2),
+                                thumbColor: AppColors.primary,
+                                overlayColor: AppColors.primary.withValues(alpha: 0.15),
+                                trackHeight: 4,
+                              ),
+                              child: Slider(
+                                value: settings.soundVolume,
+                                min: 0.0,
+                                max: 1.0,
+                                divisions: 10,
+                                onChanged: (val) {
+                                  ref.read(settingsProvider.notifier).setSoundVolume(val);
+                                },
+                                onChangeEnd: (val) {
+                                  SoundHapticHelper.buttonClick();
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     const Divider(height: 1, indent: 20, endIndent: 20, color: AppColors.cardBorder),
                     SwitchListTile(
                       activeThumbColor: Colors.white,

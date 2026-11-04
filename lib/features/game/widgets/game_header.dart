@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/constants/app_assets.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../shared/widgets/paw_icon.dart';
@@ -207,67 +206,6 @@ class GameHeader extends ConsumerWidget {
               ],
             ),
           ),
-
-          // Contextual Message Banner (Rule violation or Hint message)
-          if (gameState.contextualMessage != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 8, left: 6, right: 6),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(
-                  color: gameState.contextualMessage == 'A little pup belongs here!'
-                      ? const Color(0xFFFFF8E1)
-                      : const Color(0xFFFFECEE),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: gameState.contextualMessage == 'A little pup belongs here!'
-                        ? AppColors.gold
-                        : AppColors.clashRed.withValues(alpha: 0.5),
-                    width: 1.2,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    if (gameState.contextualMessage == 'A little pup belongs here!')
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: Image.asset(
-                          AppAssets.corgiThinking,
-                          width: 22,
-                          height: 22,
-                          fit: BoxFit.contain,
-                          errorBuilder: (context, error, stackTrace) => const Icon(
-                            Icons.lightbulb_rounded,
-                            size: 16,
-                            color: AppColors.gold,
-                          ),
-                        ),
-                      )
-                    else
-                      const Icon(
-                        Icons.info_outline_rounded,
-                        size: 16,
-                        color: AppColors.clashRed,
-                      ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        gameState.contextualMessage!,
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w700,
-                          color: gameState.contextualMessage == 'A little pup belongs here!'
-                              ? const Color(0xFF8D6E14)
-                              : AppColors.clashRed,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
         ],
       ),
     );

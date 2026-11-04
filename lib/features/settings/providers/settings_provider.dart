@@ -39,6 +39,13 @@ class SettingsNotifier extends Notifier<SettingsState> {
     await SettingsRepository.saveSettings(updated);
   }
 
+  Future<void> setSoundVolume(double volume) async {
+    await _initFuture;
+    final updated = state.copyWith(soundVolume: volume.clamp(0.0, 1.0));
+    state = updated;
+    await SettingsRepository.saveSettings(updated);
+  }
+
   Future<void> toggleHaptics(bool enabled) async {
     await _initFuture;
     final updated = state.copyWith(hapticsEnabled: enabled);

@@ -8,6 +8,7 @@ import '../../../shared/widgets/clay_cross_marker.dart';
 import '../../../shared/widgets/cute_dog_character.dart';
 import '../../../shared/widgets/paw_icon.dart';
 import '../../../shared/widgets/sparkle_effect.dart';
+import '../models/dog_breed.dart';
 import '../models/puzzle.dart';
 import '../providers/game_provider.dart';
 
@@ -413,6 +414,8 @@ class _PuzzleCellWidget extends ConsumerWidget {
         '${cellState.isWrongPlacement ? ", Wrong spot" : ""}'
         '${cellState.isConflicting ? ", Conflict" : ""}';
 
+    final breed = DogBreedAssignment.forPuzzle(puzzle).getBreedAt(row, col);
+
     final pressedCellNotifier = _PressedCellScope.of(context);
     return ValueListenableBuilder<Point<int>?>(
       valueListenable: pressedCellNotifier,
@@ -433,6 +436,7 @@ class _PuzzleCellWidget extends ConsumerWidget {
               row: row,
               col: col,
               regionId: regionId,
+              breed: breed,
               cellState: cellState,
               isPressed: isPressed,
               isTopDiff: isTopDiff,
@@ -452,6 +456,7 @@ class _CellView extends StatelessWidget {
   final int row;
   final int col;
   final int regionId;
+  final DogBreed breed;
   final _CellVisualState cellState;
   final bool isPressed;
   final bool isTopDiff;
@@ -463,6 +468,7 @@ class _CellView extends StatelessWidget {
     required this.row,
     required this.col,
     required this.regionId,
+    required this.breed,
     required this.cellState,
     required this.isPressed,
     required this.isTopDiff,
@@ -595,9 +601,35 @@ class _CellView extends StatelessWidget {
             padding: const EdgeInsets.all(0.5),
             child: FittedBox(
               fit: BoxFit.contain,
-              child: CuteDogCharacter(
-                size: 38,
-                hasClash: cellState.isConflicting,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  // Glowing aura ring around placed dogs (Reference Image 3)
+                  if (!cellState.isConflicting)
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: const Color(0xFFFFD166),
+                          width: 2.0,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFFFD166).withValues(alpha: 0.65),
+                            blurRadius: 6,
+                            spreadRadius: 1,
+                          ),
+                        ],
+                      ),
+                    ),
+                  CuteDogCharacter(
+                    size: 38,
+                    breed: breed,
+                    hasClash: cellState.isConflicting,
+                  ),
+                ],
               ),
             ),
           ),

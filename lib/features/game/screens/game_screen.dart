@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../providers/game_provider.dart';
+import '../widgets/dog_breed_collection_row.dart';
 import '../widgets/game_controls.dart';
 import '../widgets/game_header.dart';
 import '../widgets/game_over_dialog.dart';
+import '../widgets/game_rules_card.dart';
 import '../widgets/hint_dialog.dart';
 import '../widgets/mistake_dialog.dart';
 import '../widgets/pause_dialog.dart';
@@ -261,24 +263,30 @@ class _GameScreenState extends ConsumerState<GameScreen> {
             children: [
               Column(
                 children: [
-                  // Header with back, puzzle title, timer, dogs counter
+                  // 1. Compact gameplay header
                   GameHeader(
                     onBack: _confirmExit,
                   ),
 
-                  // 10x10 Puzzle Board
+                  // 2. Compact illustrated game rules
+                  const GameRulesCard(),
+
+                  // 3. Dog breed preview / character collection
+                  const DogBreedCollectionRow(),
+
+                  // 4. 10x10 Puzzle Board (maximum usable area)
                   const Expanded(
                     child: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 14.0, vertical: 8.0),
+                      padding: EdgeInsets.symmetric(horizontal: 14.0, vertical: 4.0),
                       child: Center(
                         child: PuzzleBoardWidget(),
                       ),
                     ),
                   ),
 
-                  // Controls (Undo, Reset, Hint)
+                  // 5. Bottom action controls (Undo, Reset, Hint)
                   const GameControls(),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 6),
                 ],
               ),
 

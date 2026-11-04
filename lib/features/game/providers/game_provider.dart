@@ -148,11 +148,21 @@ class PuzzleGameNotifier extends Notifier<PuzzleGameState> {
   Timer? _timer;
   Timer? _messageClearTimer;
 
+  // Drag-to-cross gesture state
+  GameActionSnapshot? _dragPreSnapshot;
+  final Set<Point<int>> _dragVisitedCells = {};
+  final Set<Point<int>> _dragAddedCrosses = {};
+  bool _isDragging = false;
+
   @override
   PuzzleGameState build() {
     ref.onDispose(() {
       _timer?.cancel();
       _messageClearTimer?.cancel();
+      _dragPreSnapshot = null;
+      _dragVisitedCells.clear();
+      _dragAddedCrosses.clear();
+      _isDragging = false;
     });
 
     final initialPuzzle = PuzzleRepository.getPuzzleByIndex(0);
@@ -177,6 +187,10 @@ class PuzzleGameNotifier extends Notifier<PuzzleGameState> {
   void loadPuzzle(int index) {
     _timer?.cancel();
     _messageClearTimer?.cancel();
+    _dragPreSnapshot = null;
+    _dragVisitedCells.clear();
+    _dragAddedCrosses.clear();
+    _isDragging = false;
     final puzzle = PuzzleRepository.getPuzzleByIndex(index);
 
     state = PuzzleGameState(
@@ -390,6 +404,90 @@ class PuzzleGameNotifier extends Notifier<PuzzleGameState> {
   /// Backward-compatible method to toggle cross
   void toggleMarkEmpty(int r, int c) => singleTapCell(r, c);
 
+  /// Whether a drag-to-cross gesture is currently active.
+  bool get isDragging => _isDragging;
+
+  /// Starts a multi-cell drag-to-cross gesture at cell (r, c).
+  ///
+  /// Snapshots initial state for a single atomic undo, clears visited/added sets,
+  /// and marks the initial cell if empty.
+  void startDragCross(int r, int c) {
+    if (state.isPaused || state.isCompleted || state.isGameOver) return;
+    _isDragging = true;
+    _dragPreSnapshot = GameActionSnapshot(
+      placements: List<DogPlacement>.from(state.placements),
+      crosses: Set<Point<int>>.from(state.crosses),
+    );
+    _dragVisitedCells.clear();
+    _dragAddedCrosses.clear();
+    _processDragCell(r, c);
+  }
+
+  /// Updates the multi-cell drag gesture as pointer enters cell (r, c).
+  void updateDragCross(int r, int c) {
+    if (!_isDragging || state.isPaused || state.isCompleted || state.isGameOver) return;
+    _processDragCell(r, c);
+  }
+
+  /// Ends the multi-cell drag gesture.
+  ///
+  /// Commits the complete drag action to undo history as ONE atomic action if
+  /// any new crosses were marked, and clears gesture tracking state.
+  void endDragCross() {
+    if (!_isDragging) return;
+    if (_dragAddedCrosses.isNotEmpty && _dragPreSnapshot != null) {
+      state = state.copyWith(
+        undoStack: [...state.undoStack, _dragPreSnapshot!],
+      );
+    }
+    _dragPreSnapshot = null;
+    _dragVisitedCells.clear();
+    _dragAddedCrosses.clear();
+    _isDragging = false;
+  }
+
+  /// Cancels the multi-cell drag gesture and safely reverts any newly marked crosses.
+  void cancelDragCross() {
+    if (!_isDragging) return;
+    if (_dragPreSnapshot != null) {
+      state = state.copyWith(crosses: _dragPreSnapshot!.crosses);
+    }
+    _dragPreSnapshot = null;
+    _dragVisitedCells.clear();
+    _dragAddedCrosses.clear();
+    _isDragging = false;
+  }
+
+  /// Processes an individual cell visited during a drag gesture.
+  /// - Empty cells: marked with X immediately.
+  /// - Cells already containing X: skipped (not duplicated, not removed).
+  /// - Cells containing dogs (locked or placed): skipped (never replaced or removed).
+  /// - Dragging must ONLY mark crosses; it must never place dogs.
+  /// - Each cell is processed at most once during one gesture.
+  void _processDragCell(int r, int c) {
+    if (r < 0 || r >= 10 || c < 0 || c >= 10) return;
+    final point = Point(r, c);
+    if (_dragVisitedCells.contains(point)) return;
+    _dragVisitedCells.add(point);
+
+    // If cell contains a dog (locked or placed), do NOT modify or remove it
+    if (state.hasDogAt(r, c)) return;
+
+    // If cell already contains a cross, do not duplicate or remove it
+    if (state.hasCrossAt(r, c)) return;
+
+    // It is an empty cell: mark with X immediately
+    final newCrosses = Set<Point<int>>.from(state.crosses)..add(point);
+    _dragAddedCrosses.add(point);
+
+    state = state.copyWith(
+      crosses: newCrosses,
+      clearContextualMessage: true,
+      conflictingPlacements: const {},
+    );
+    SoundHapticHelper.crossMark();
+  }
+
   /// Accepts the active hint by placing a dog on the hinted cell, replacing any cross.
   void acceptHint() {
     if (state.hintCell == null) return;
@@ -418,6 +516,10 @@ class PuzzleGameNotifier extends Notifier<PuzzleGameState> {
   void resetPuzzle() {
     _timer?.cancel();
     _messageClearTimer?.cancel();
+    _dragPreSnapshot = null;
+    _dragVisitedCells.clear();
+    _dragAddedCrosses.clear();
+    _isDragging = false;
 
     state = state.copyWith(
       placements: const [],

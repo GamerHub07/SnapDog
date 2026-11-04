@@ -25,6 +25,22 @@ class PuzzleBoardWidget extends ConsumerStatefulWidget {
 }
 
 class _PuzzleBoardWidgetState extends ConsumerState<PuzzleBoardWidget> {
+  final ValueNotifier<Point<int>?> _pressedCellNotifier = ValueNotifier<Point<int>?>(null);
+
+  // Multi-cell drag & unified gesture coordination state
+  int? _activePointerId;
+  Offset? _downPosition;
+  Point<int>? _downCell;
+  Point<int>? _lastVisitedCell;
+  bool _isDragGesture = false;
+
+  // Double-tap & single-tap recognition
+  Point<int>? _justDoubleTappedCell;
+  final Map<Point<int>, Timer> _pendingTapTimers = {};
+
+  static const double _touchSlop = 12.0;
+  static const Duration _doubleTapTimeout = Duration(milliseconds: 220);
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -35,6 +51,171 @@ class _PuzzleBoardWidgetState extends ConsumerState<PuzzleBoardWidget> {
   }
 
   @override
+  void dispose() {
+    _cancelAllTapTimers();
+    _pressedCellNotifier.dispose();
+    super.dispose();
+  }
+
+  void _cancelAllTapTimers() {
+    for (final timer in _pendingTapTimers.values) {
+      timer.cancel();
+    }
+    _pendingTapTimers.clear();
+  }
+
+  void _handlePointerDown(PointerDownEvent event, double innerSize) {
+    if (_activePointerId != null) return;
+    _activePointerId = event.pointer;
+    _downPosition = event.localPosition;
+    _isDragGesture = false;
+
+    final double cellSize = innerSize / 10.0;
+    final int col = (event.localPosition.dx / cellSize).floor().clamp(0, 9);
+    final int row = (event.localPosition.dy / cellSize).floor().clamp(0, 9);
+    final cell = Point(row, col);
+
+    _downCell = cell;
+    _lastVisitedCell = cell;
+    _pressedCellNotifier.value = cell;
+
+    // If a first tap is already pending within the double-tap recognition window for this cell,
+    // this incoming tap is the second tap of a double-tap!
+    if (_pendingTapTimers.containsKey(cell)) {
+      _pendingTapTimers[cell]?.cancel();
+      _pendingTapTimers.remove(cell);
+      _justDoubleTappedCell = cell;
+      ref.read(puzzleGameProvider.notifier).doubleTapCell(cell.x, cell.y);
+    }
+  }
+
+  void _handlePointerMove(PointerMoveEvent event, double innerSize) {
+    if (event.pointer != _activePointerId || _downPosition == null || _downCell == null) {
+      return;
+    }
+
+    final double cellSize = innerSize / 10.0;
+    final int col = (event.localPosition.dx / cellSize).floor().clamp(0, 9);
+    final int row = (event.localPosition.dy / cellSize).floor().clamp(0, 9);
+    final currentCell = Point(row, col);
+
+    final double distance = (event.localPosition - _downPosition!).distance;
+
+    // Distinguish tapping from dragging using touch slop threshold (~12px)
+    if (!_isDragGesture && distance > _touchSlop) {
+      _isDragGesture = true;
+
+      // Cancel pending tap timers because this is a drag, not a tap or double tap
+      _cancelAllTapTimers();
+      _justDoubleTappedCell = null;
+
+      // Start drag at initial cell
+      ref.read(puzzleGameProvider.notifier).startDragCross(_downCell!.x, _downCell!.y);
+      _lastVisitedCell = _downCell;
+    }
+
+    if (_isDragGesture) {
+      _pressedCellNotifier.value = currentCell;
+
+      if (_lastVisitedCell != null && currentCell != _lastVisitedCell) {
+        // Fast dragging interpolation using Bresenham's line algorithm
+        // so NO cells are skipped even with rapid swipe gestures
+        final lineCells = _getLineCells(_lastVisitedCell!, currentCell);
+        final notifier = ref.read(puzzleGameProvider.notifier);
+        for (final pt in lineCells) {
+          notifier.updateDragCross(pt.x, pt.y);
+        }
+        _lastVisitedCell = currentCell;
+      }
+    }
+  }
+
+  void _handlePointerUp(PointerUpEvent event, double innerSize) {
+    if (event.pointer != _activePointerId) return;
+    _activePointerId = null;
+    _pressedCellNotifier.value = null;
+
+    if (_isDragGesture) {
+      ref.read(puzzleGameProvider.notifier).endDragCross();
+      _isDragGesture = false;
+      _downPosition = null;
+      _downCell = null;
+      _lastVisitedCell = null;
+      _justDoubleTappedCell = null;
+      return;
+    }
+
+    // It was a tap (not a drag)
+    final tappedCell = _downCell;
+    _downPosition = null;
+    _downCell = null;
+    _lastVisitedCell = null;
+
+    if (tappedCell == null) return;
+
+    // If this tap was already handled as a double tap on pointer down, reset flag and do not schedule single tap
+    if (_justDoubleTappedCell == tappedCell) {
+      _justDoubleTappedCell = null;
+      return;
+    }
+
+    // Schedule single tap callback after the double-tap interval expires
+    _pendingTapTimers[tappedCell]?.cancel();
+    _pendingTapTimers[tappedCell] = Timer(_doubleTapTimeout, () {
+      _pendingTapTimers.remove(tappedCell);
+      if (mounted) {
+        ref.read(puzzleGameProvider.notifier).singleTapCell(tappedCell.x, tappedCell.y);
+      }
+    });
+  }
+
+  void _handlePointerCancel(PointerCancelEvent event) {
+    if (event.pointer != _activePointerId) return;
+    _activePointerId = null;
+    _pressedCellNotifier.value = null;
+
+    if (_isDragGesture) {
+      ref.read(puzzleGameProvider.notifier).cancelDragCross();
+      _isDragGesture = false;
+    }
+
+    _cancelAllTapTimers();
+    _justDoubleTappedCell = null;
+    _downPosition = null;
+    _downCell = null;
+    _lastVisitedCell = null;
+  }
+
+  List<Point<int>> _getLineCells(Point<int> from, Point<int> to) {
+    final List<Point<int>> cells = [];
+    int x0 = from.y; // col
+    int y0 = from.x; // row
+    final int x1 = to.y;
+    final int y1 = to.x;
+
+    final int dx = (x1 - x0).abs();
+    final int dy = -(y1 - y0).abs();
+    final int sx = x0 < x1 ? 1 : -1;
+    final int sy = y0 < y1 ? 1 : -1;
+    int err = dx + dy;
+
+    while (true) {
+      cells.add(Point(y0, x0));
+      if (x0 == x1 && y0 == y1) break;
+      final int e2 = 2 * err;
+      if (e2 >= dy) {
+        err += dy;
+        x0 += sx;
+      }
+      if (e2 <= dx) {
+        err += dx;
+        y0 += sy;
+      }
+    }
+    return cells;
+  }
+
+  @override
   Widget build(BuildContext context) {
     // Watch only the puzzle instance so the board container does not rebuild on timer or cell changes
     final puzzle = ref.watch(puzzleGameProvider.select((s) => s.puzzle));
@@ -42,6 +223,7 @@ class _PuzzleBoardWidgetState extends ConsumerState<PuzzleBoardWidget> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final double boardSize = min(constraints.maxWidth, constraints.maxHeight);
+        final double innerSize = boardSize - 13.0; // padding 4 * 2 + border 2.5 * 2
 
         return Center(
           child: Container(
@@ -62,36 +244,46 @@ class _PuzzleBoardWidgetState extends ConsumerState<PuzzleBoardWidget> {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(14),
-              child: GridView.builder(
-                physics: const NeverScrollableScrollPhysics(),
-                padding: EdgeInsets.zero,
-                itemCount: 100,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 10,
+              child: _PressedCellScope(
+                pressedCellNotifier: _pressedCellNotifier,
+                child: Listener(
+                  behavior: HitTestBehavior.opaque,
+                  onPointerDown: (event) => _handlePointerDown(event, innerSize),
+                  onPointerMove: (event) => _handlePointerMove(event, innerSize),
+                  onPointerUp: (event) => _handlePointerUp(event, innerSize),
+                  onPointerCancel: _handlePointerCancel,
+                  child: GridView.builder(
+                    physics: const NeverScrollableScrollPhysics(),
+                    padding: EdgeInsets.zero,
+                    itemCount: 100,
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 10,
+                    ),
+                    itemBuilder: (context, index) {
+                      final row = index ~/ 10;
+                      final col = index % 10;
+                      final regionId = puzzle.getRegionAt(row, col);
+
+                      // Determine thick borders between different color regions (static per puzzle)
+                      final isTopDiff = row > 0 && puzzle.getRegionAt(row - 1, col) != regionId;
+                      final isBottomDiff = row < 9 && puzzle.getRegionAt(row + 1, col) != regionId;
+                      final isLeftDiff = col > 0 && puzzle.getRegionAt(row, col - 1) != regionId;
+                      final isRightDiff = col < 9 && puzzle.getRegionAt(row, col + 1) != regionId;
+
+                      return _PuzzleCellWidget(
+                        key: ValueKey('cell_${row}_$col'),
+                        row: row,
+                        col: col,
+                        regionId: regionId,
+                        puzzle: puzzle,
+                        isTopDiff: isTopDiff,
+                        isBottomDiff: isBottomDiff,
+                        isLeftDiff: isLeftDiff,
+                        isRightDiff: isRightDiff,
+                      );
+                    },
+                  ),
                 ),
-                itemBuilder: (context, index) {
-                  final row = index ~/ 10;
-                  final col = index % 10;
-                  final regionId = puzzle.getRegionAt(row, col);
-
-                  // Determine thick borders between different color regions (static per puzzle)
-                  final isTopDiff = row > 0 && puzzle.getRegionAt(row - 1, col) != regionId;
-                  final isBottomDiff = row < 9 && puzzle.getRegionAt(row + 1, col) != regionId;
-                  final isLeftDiff = col > 0 && puzzle.getRegionAt(row, col - 1) != regionId;
-                  final isRightDiff = col < 9 && puzzle.getRegionAt(row, col + 1) != regionId;
-
-                  return _PuzzleCellWidget(
-                    key: ValueKey('cell_${row}_$col'),
-                    row: row,
-                    col: col,
-                    regionId: regionId,
-                    puzzle: puzzle,
-                    isTopDiff: isTopDiff,
-                    isBottomDiff: isBottomDiff,
-                    isLeftDiff: isLeftDiff,
-                    isRightDiff: isRightDiff,
-                  );
-                },
               ),
             ),
           ),
@@ -99,6 +291,24 @@ class _PuzzleBoardWidgetState extends ConsumerState<PuzzleBoardWidget> {
       },
     );
   }
+}
+
+/// InheritedWidget that provides the active pressed cell notifier to child cell widgets.
+class _PressedCellScope extends InheritedWidget {
+  final ValueNotifier<Point<int>?> pressedCellNotifier;
+
+  const _PressedCellScope({
+    required this.pressedCellNotifier,
+    required super.child,
+  });
+
+  static ValueNotifier<Point<int>?> of(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<_PressedCellScope>()!.pressedCellNotifier;
+  }
+
+  @override
+  bool updateShouldNotify(_PressedCellScope oldWidget) =>
+      pressedCellNotifier != oldWidget.pressedCellNotifier;
 }
 
 /// Immutable snapshot of the visual properties of a single cell.
@@ -203,125 +413,36 @@ class _PuzzleCellWidget extends ConsumerWidget {
         '${cellState.isWrongPlacement ? ", Wrong spot" : ""}'
         '${cellState.isConflicting ? ", Conflict" : ""}';
 
-    return _CellGestureDetector(
-      semanticLabel: semanticLabel,
-      onTap: () {
-        ref.read(puzzleGameProvider.notifier).singleTapCell(row, col);
-      },
-      onDoubleTap: () {
-        ref.read(puzzleGameProvider.notifier).doubleTapCell(row, col);
-      },
-      builder: (context, isPressed) {
-        return _CellView(
-          row: row,
-          col: col,
-          regionId: regionId,
-          cellState: cellState,
-          isPressed: isPressed,
-          isTopDiff: isTopDiff,
-          isBottomDiff: isBottomDiff,
-          isLeftDiff: isLeftDiff,
-          isRightDiff: isRightDiff,
+    final pressedCellNotifier = _PressedCellScope.of(context);
+    return ValueListenableBuilder<Point<int>?>(
+      valueListenable: pressedCellNotifier,
+      builder: (context, pressedCell, child) {
+        final isPressed = pressedCell != null && pressedCell.x == row && pressedCell.y == col;
+
+        return Semantics(
+          label: semanticLabel,
+          button: true,
+          onTap: () {
+            ref.read(puzzleGameProvider.notifier).singleTapCell(row, col);
+          },
+          child: AnimatedScale(
+            scale: isPressed ? 0.93 : 1.0,
+            duration: const Duration(milliseconds: 60),
+            curve: Curves.easeOutQuad,
+            child: _CellView(
+              row: row,
+              col: col,
+              regionId: regionId,
+              cellState: cellState,
+              isPressed: isPressed,
+              isTopDiff: isTopDiff,
+              isBottomDiff: isBottomDiff,
+              isLeftDiff: isLeftDiff,
+              isRightDiff: isRightDiff,
+            ),
+          ),
         );
       },
-    );
-  }
-}
-
-/// Gesture detector with immediate pressed-state feedback and 220ms double-tap window.
-class _CellGestureDetector extends StatefulWidget {
-  final Widget Function(BuildContext context, bool isPressed) builder;
-  final VoidCallback onTap;
-  final VoidCallback onDoubleTap;
-  final String semanticLabel;
-
-  const _CellGestureDetector({
-    required this.builder,
-    required this.onTap,
-    required this.onDoubleTap,
-    required this.semanticLabel,
-  });
-
-  @override
-  State<_CellGestureDetector> createState() => _CellGestureDetectorState();
-}
-
-class _CellGestureDetectorState extends State<_CellGestureDetector> {
-  bool _isPressed = false;
-  Timer? _singleTapTimer;
-  bool _justDoubleTapped = false;
-
-  // Optimized double-tap recognition interval (220ms target within 200–250ms range)
-  static const Duration _doubleTapTimeout = Duration(milliseconds: 220);
-
-  @override
-  void dispose() {
-    _singleTapTimer?.cancel();
-    _singleTapTimer = null;
-    super.dispose();
-  }
-
-  void _handleTapDown(TapDownDetails details) {
-    if (!mounted) return;
-    setState(() {
-      _isPressed = true;
-    });
-
-    // If a first tap is already pending within the double-tap recognition window,
-    // this incoming tap is the second tap of a double-tap!
-    if (_singleTapTimer != null) {
-      _singleTapTimer?.cancel();
-      _singleTapTimer = null;
-      _justDoubleTapped = true;
-      widget.onDoubleTap();
-    }
-  }
-
-  void _handleTapUp(TapUpDetails details) {
-    if (!mounted) return;
-    setState(() {
-      _isPressed = false;
-    });
-
-    // If this was the second tap of a double tap, reset flag and do not schedule a single tap
-    if (_justDoubleTapped) {
-      _justDoubleTapped = false;
-      return;
-    }
-
-    // Schedule single tap callback after the double-tap interval expires
-    _singleTapTimer ??= Timer(_doubleTapTimeout, () {
-      if (!mounted) return;
-      _singleTapTimer = null;
-      widget.onTap();
-    });
-  }
-
-  void _handleTapCancel() {
-    if (!mounted) return;
-    setState(() {
-      _isPressed = false;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      label: widget.semanticLabel,
-      button: true,
-      onTap: widget.onTap,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTapDown: _handleTapDown,
-        onTapUp: _handleTapUp,
-        onTapCancel: _handleTapCancel,
-        child: AnimatedScale(
-          scale: _isPressed ? 0.93 : 1.0,
-          duration: const Duration(milliseconds: 60),
-          curve: Curves.easeOutQuad,
-          child: widget.builder(context, _isPressed),
-        ),
-      ),
     );
   }
 }

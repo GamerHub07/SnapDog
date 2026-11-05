@@ -310,7 +310,7 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(find.byType(GameScreen), findsOneWidget);
-      expect(find.textContaining('Puppy Park'), findsOneWidget);
+      expect(find.textContaining('Level'), findsOneWidget);
     });
 
     testWidgets('Board renders cleanly on standard phone screen (390x844)', (WidgetTester tester) async {

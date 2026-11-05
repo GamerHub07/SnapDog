@@ -102,9 +102,13 @@ class SettingsRepository {
     try {
       final prefs = customPrefs ?? await SharedPreferences.getInstance();
       // Clear game progression, daily challenge, and stats keys
+      await prefs.remove('snapdog_puzzle_progression_v2');
       await prefs.remove('snapdog_puzzle_progression_v1');
       await prefs.remove('snapdog_daily_challenge_v1');
       await prefs.remove('snapdog_game_stats');
+      await prefs.remove('snapdog_generated_puzzles_v1');
+      await prefs.remove('snapdog_difficulty_scheduler_v1');
+      await prefs.remove('snapdog_fingerprints_v1');
       // Keep user preferences (sound, volume, haptics, theme, onboarding) intact unless desired
     } catch (_) {}
   }

@@ -8,10 +8,8 @@ import '../../../shared/widgets/snap_dog_button.dart';
 import '../../game/models/puzzle.dart';
 import '../../game/providers/game_provider.dart';
 import '../../game/screens/game_screen.dart';
-import '../../game/services/puzzle_repository.dart';
 import '../../daily_challenge/screens/daily_challenge_screen.dart';
 import '../../progression/providers/progression_provider.dart';
-import '../../progression/screens/puzzle_selection_screen.dart';
 import '../../settings/screens/settings_screen.dart';
 import '../widgets/daily_challenge_card.dart';
 import '../widgets/home_decorations.dart';
@@ -26,19 +24,10 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   void _startPuzzle(Puzzle puzzle) {
-    final puzzleIndex = PuzzleRepository.getPuzzleIndex(puzzle);
-    ref.read(puzzleGameProvider.notifier).loadPuzzle(puzzleIndex >= 0 ? puzzleIndex : 0);
+    ref.read(puzzleGameProvider.notifier).loadLevel(puzzle.levelNumber);
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => GameScreen(puzzleIndex: puzzleIndex >= 0 ? puzzleIndex : 0),
-      ),
-    );
-  }
-
-  void _openPuzzleSelection() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => const PuzzleSelectionScreen(),
+        builder: (_) => GameScreen(puzzleIndex: puzzle.levelNumber - 1),
       ),
     );
   }
@@ -55,10 +44,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final progression = ref.watch(progressionProvider);
     final resumePuzzle = progression.getResumePuzzle();
-    final nextPuzzle = progression.getNextAvailablePuzzle();
-    final completedCount = progression.completedPuzzlesCount;
-    final totalCount = PuzzleRepository.totalCount;
-    final progressFraction = totalCount > 0 ? (completedCount / totalCount).clamp(0.0, 1.0) : 0.0;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -173,80 +158,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             ),
                             const SizedBox(height: 16),
 
-                            // Overall Progress Indicator & Completed Puzzles Count
+                            // Current Level Banner
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                               decoration: BoxDecoration(
-                                color: AppColors.surfaceElevated,
-                                borderRadius: BorderRadius.circular(18),
-                                border: Border.all(color: AppColors.cardBorder, width: 1),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          const Icon(
-                                            Icons.pets_rounded,
-                                            size: 16,
-                                            color: AppColors.primary,
-                                          ),
-                                          const SizedBox(width: 6),
-                                          const Text(
-                                            'Overall Progress',
-                                            style: TextStyle(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w700,
-                                              color: AppColors.text,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      Text(
-                                        '$completedCount/$totalCount Completed',
-                                        style: const TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w800,
-                                          color: AppColors.primaryDark,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: LinearProgressIndicator(
-                                      value: progressFraction,
-                                      minHeight: 8,
-                                      backgroundColor: AppColors.secondary.withValues(alpha: 0.5),
-                                      valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                            const SizedBox(height: 14),
-
-                            // Current Difficulty and Next Available Puzzle Banner
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                              decoration: BoxDecoration(
                                 color: AppColors.secondary.withValues(alpha: 0.4),
-                                borderRadius: BorderRadius.circular(14),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: AppColors.cardBorder, width: 1),
                               ),
                               child: Row(
                                 children: [
-                                  const PawIcon(size: 16, color: AppColors.primaryDark),
-                                  const SizedBox(width: 8),
+                                  const PawIcon(size: 18, color: AppColors.primaryDark),
+                                  const SizedBox(width: 10),
                                   Expanded(
                                     child: Text(
-                                      'Next: Level ${nextPuzzle.levelNumber} • ${nextPuzzle.title}',
+                                      'Level ${resumePuzzle.levelNumber} • ${resumePuzzle.title}',
                                       style: const TextStyle(
-                                        fontSize: 13,
+                                        fontSize: 14,
                                         fontWeight: FontWeight.w700,
                                         color: AppColors.text,
                                       ),
@@ -260,7 +188,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Text(
-                                      nextPuzzle.difficultyLabel,
+                                      resumePuzzle.difficultyLabel,
                                       style: const TextStyle(
                                         fontSize: 11,
                                         fontWeight: FontWeight.w800,
@@ -274,27 +202,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                             const SizedBox(height: 18),
 
-                            // Continue Playing Button
+                            // Continue Level Button
                             SnapDogButton(
-                              label: 'Continue Playing',
+                              label: 'Continue Level',
                               icon: const PawIcon(size: 20, color: Colors.white),
                               height: 54,
                               fontSize: 16,
                               width: double.infinity,
                               onPressed: () => _startPuzzle(resumePuzzle),
-                            ),
-
-                            const SizedBox(height: 10),
-
-                            // Secondary Play Levels Button that opens puzzle selection screen
-                            SnapDogButton(
-                              label: 'Play Levels',
-                              icon: const Icon(Icons.grid_view_rounded, size: 20, color: AppColors.text),
-                              height: 54,
-                              fontSize: 16,
-                              width: double.infinity,
-                              variant: SnapDogButtonVariant.secondary,
-                              onPressed: _openPuzzleSelection,
                             ),
                           ],
                         ),

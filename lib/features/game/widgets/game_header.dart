@@ -4,6 +4,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../shared/widgets/paw_icon.dart';
 import '../../settings/screens/settings_screen.dart';
+import '../models/puzzle.dart';
 import '../providers/game_provider.dart';
 
 /// Compact gameplay header matching Reference Image 2.
@@ -29,6 +30,17 @@ class GameHeader extends ConsumerWidget {
     final minutes = totalSeconds ~/ 60;
     final seconds = totalSeconds % 60;
     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  Color _difficultyColor(Difficulty diff) {
+    switch (diff) {
+      case Difficulty.easy:
+        return AppColors.success;
+      case Difficulty.medium:
+        return AppColors.warning;
+      case Difficulty.hard:
+        return AppColors.primaryDark;
+    }
   }
 
   void _openSettings(BuildContext context) {
@@ -67,33 +79,51 @@ class GameHeader extends ConsumerWidget {
 
               const SizedBox(width: 6),
 
-              // Level & Title badge
+              // Level & Difficulty Badge (e.g., "LEVEL 12" and a small "HARD" label)
               Flexible(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
                   decoration: BoxDecoration(
                     color: AppColors.secondary.withValues(alpha: 0.65),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(color: AppColors.primaryLight, width: 1.2),
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      PawIcon(size: 13, color: AppColors.primaryDark),
-                      const SizedBox(width: 4),
-                      Flexible(
-                        child: Text(
-                          'Level ${puzzle.levelNumber}: ${puzzle.title}',
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.center,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const PawIcon(size: 13, color: AppColors.primaryDark),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Level ${puzzle.levelNumber}',
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w800,
                             color: AppColors.primaryDark,
+                            letterSpacing: 0.2,
                           ),
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1.5),
+                          decoration: BoxDecoration(
+                            color: _difficultyColor(puzzle.difficulty),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            puzzle.difficulty.name.toUpperCase(),
+                            style: const TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

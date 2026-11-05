@@ -1,7 +1,23 @@
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/dog_placement.dart';
 import '../models/puzzle.dart';
+import 'difficulty_scheduler.dart';
+import 'puzzle_fingerprint.dart';
+import 'puzzle_generator.dart';
+import 'puzzle_solver.dart';
 
 class PuzzleRepository {
+  static final Map<int, Puzzle> _generatedCache = {};
+  static final DifficultyScheduler scheduler = DifficultyScheduler();
+  static final RecentFingerprintTracker fingerprintTracker = RecentFingerprintTracker();
+
+  static const String _puzzlesStorageKey = 'snapdog_generated_puzzles_v1';
+  static const String _schedulerStorageKey = 'snapdog_difficulty_scheduler_v1';
+  static const String _fingerprintsStorageKey = 'snapdog_fingerprints_v1';
+  static bool _initialized = false;
+  static bool get isInitialized => _initialized;
   static final List<Puzzle> puzzles = [
     // -------------------------------------------------------------
     // EASY PUZZLES (Levels 1 - 3)
@@ -105,12 +121,12 @@ class PuzzleRepository {
     // -------------------------------------------------------------
     // MEDIUM PUZZLES (Levels 1 - 3)
     // -------------------------------------------------------------
-    // Puzzle 4: Daisy Meadow (Medium - Level 1)
+    // Puzzle 4: Daisy Meadow (Medium - Level 4)
     Puzzle(
       id: 'puzzle_4',
       title: 'Daisy Meadow',
       difficulty: Difficulty.medium,
-      levelNumber: 1,
+      levelNumber: 4,
       regionMap: [
         [0, 0, 0, 4, 4, 3, 3, 3, 3, 3],
         [0, 2, 4, 4, 4, 3, 3, 3, 3, 1],
@@ -137,12 +153,12 @@ class PuzzleRepository {
       ],
     ),
 
-    // Puzzle 5: Breezy Trail (Medium - Level 2)
+    // Puzzle 5: Breezy Trail (Medium - Level 5)
     Puzzle(
       id: 'puzzle_5',
       title: 'Breezy Trail',
       difficulty: Difficulty.medium,
-      levelNumber: 2,
+      levelNumber: 5,
       regionMap: [
         [1, 1, 1, 0, 0, 0, 0, 0, 0, 0],
         [1, 1, 1, 1, 1, 0, 0, 0, 0, 0],
@@ -169,12 +185,12 @@ class PuzzleRepository {
       ],
     ),
 
-    // Puzzle 6: Playful Paws (Medium - Level 3)
+    // Puzzle 6: Playful Paws (Medium - Level 6)
     Puzzle(
       id: 'puzzle_6',
       title: 'Playful Paws',
       difficulty: Difficulty.medium,
-      levelNumber: 3,
+      levelNumber: 6,
       regionMap: [
         [0, 0, 0, 3, 3, 3, 2, 2, 2, 2],
         [0, 0, 3, 3, 3, 1, 2, 2, 2, 2],
@@ -204,12 +220,12 @@ class PuzzleRepository {
     // -------------------------------------------------------------
     // HARD PUZZLES (Levels 1 - 3)
     // -------------------------------------------------------------
-    // Puzzle 7: Sunny Backyard (Hard - Level 1)
+    // Puzzle 7: Sunny Backyard (Hard - Level 7)
     Puzzle(
       id: 'puzzle_7',
       title: 'Sunny Backyard',
       difficulty: Difficulty.hard,
-      levelNumber: 1,
+      levelNumber: 7,
       regionMap: [
         [2, 0, 0, 1, 2, 2, 2, 2, 2, 2],
         [2, 2, 2, 1, 2, 2, 2, 2, 2, 2],
@@ -236,12 +252,12 @@ class PuzzleRepository {
       ],
     ),
 
-    // Puzzle 8: Bark Ridge (Hard - Level 2)
+    // Puzzle 8: Bark Ridge (Hard - Level 8)
     Puzzle(
       id: 'puzzle_8',
       title: 'Bark Ridge',
       difficulty: Difficulty.hard,
-      levelNumber: 2,
+      levelNumber: 8,
       regionMap: [
         [0, 1, 1, 3, 5, 5, 5, 5, 5, 2],
         [1, 1, 1, 3, 5, 5, 5, 5, 5, 2],
@@ -268,12 +284,12 @@ class PuzzleRepository {
       ],
     ),
 
-    // Puzzle 9: Golden Haven (Hard - Level 3)
+    // Puzzle 9: Golden Haven (Hard - Level 9)
     Puzzle(
       id: 'puzzle_9',
       title: 'Golden Haven',
       difficulty: Difficulty.hard,
-      levelNumber: 3,
+      levelNumber: 9,
       regionMap: [
         [3, 3, 3, 1, 1, 1, 1, 0, 0, 0],
         [3, 3, 3, 3, 1, 1, 1, 1, 0, 0],
@@ -303,20 +319,165 @@ class PuzzleRepository {
 
   static int get totalCount => puzzles.length;
 
+  /// Validates a puzzle using [PuzzleSolver.validateUniqueness].
+  /// Identifies whether the puzzle has a unique solution, multiple solutions, or is impossible.
+  static UniqueSolutionResult validatePuzzle(Puzzle puzzle) {
+    return PuzzleSolver.validateUniqueness(puzzle);
+  }
+
+  /// Registers canonical fingerprints of handcrafted puzzles 1..9
+  /// so procedural generation never duplicates them.
+  static void registerHandcraftedFingerprints() {
+    for (final p in puzzles) {
+      fingerprintTracker.addPuzzle(p);
+    }
+  }
+
+  /// Hydrates persisted puzzles, scheduling, and fingerprints from storage.
+  static Future<void> loadPersistedData([SharedPreferences? customPrefs]) async {
+    try {
+      final prefs = customPrefs ?? await SharedPreferences.getInstance();
+
+      // Register handcrafted fingerprints first
+      registerHandcraftedFingerprints();
+
+      // Load scheduler history
+      final schedulerJson = prefs.getString(_schedulerStorageKey);
+      if (schedulerJson != null) {
+        final loadedScheduler = DifficultyScheduler.fromJson(schedulerJson);
+        for (int l = 10; l < 2000; l++) {
+          final diff = loadedScheduler.getDifficultyForLevel(l);
+          scheduler.recordLevelDifficulty(l, diff);
+        }
+      }
+
+      // Load tracker history
+      final trackerJson = prefs.getString(_fingerprintsStorageKey);
+      if (trackerJson != null) {
+        final loadedTracker = RecentFingerprintTracker.fromJson(trackerJson);
+        for (final fp in loadedTracker.toList()) {
+          fingerprintTracker.add(PuzzleFingerprint(fp));
+        }
+      }
+
+      // Load generated puzzles
+      final puzzlesJson = prefs.getString(_puzzlesStorageKey);
+      if (puzzlesJson != null) {
+        final decoded = json.decode(puzzlesJson) as Map<String, dynamic>;
+        for (final entry in decoded.entries) {
+          final lvl = int.tryParse(entry.key);
+          if (lvl != null && entry.value is Map<String, dynamic>) {
+            try {
+              final puzzle = Puzzle.fromMap(entry.value as Map<String, dynamic>);
+              _generatedCache[lvl] = puzzle;
+              scheduler.recordLevelDifficulty(lvl, puzzle.difficulty);
+              fingerprintTracker.addPuzzle(puzzle);
+            } catch (_) {}
+          }
+        }
+      }
+
+      _initialized = true;
+    } catch (_) {
+      // Ignored when SharedPreferences is unmocked in headless widget tests
+    }
+  }
+
+  /// Persists generated puzzles, scheduler state, and fingerprints to storage.
+  static Future<void> savePersistedData([SharedPreferences? customPrefs]) async {
+    try {
+      final prefs = customPrefs ?? await SharedPreferences.getInstance();
+
+      final puzzlesMap = <String, dynamic>{};
+      for (final entry in _generatedCache.entries) {
+        puzzlesMap[entry.key.toString()] = entry.value.toMap();
+      }
+      await prefs.setString(_puzzlesStorageKey, json.encode(puzzlesMap));
+      await prefs.setString(_schedulerStorageKey, scheduler.toJson());
+      await prefs.setString(_fingerprintsStorageKey, fingerprintTracker.toJson());
+    } catch (_) {
+      // Ignored when SharedPreferences is unmocked in headless widget tests
+    }
+  }
+
+  /// Clears cache and resets tracker/scheduler state (for unit testing).
+  static void clearCacheForTesting() {
+    _generatedCache.clear();
+    scheduler.clear();
+    fingerprintTracker.clear();
+    registerHandcraftedFingerprints();
+    _initialized = false;
+  }
+
+  /// Manually caches a generated puzzle (for unit testing or hydration).
+  static void setGeneratedPuzzleForTesting(int levelNumber, Puzzle puzzle) {
+    _generatedCache[levelNumber] = puzzle;
+    scheduler.recordLevelDifficulty(levelNumber, puzzle.difficulty);
+    fingerprintTracker.addPuzzle(puzzle);
+  }
+
+  /// Returns the puzzle for [levelNumber] (1-indexed).
+  /// Handcrafted levels 1..9 are returned for levels 1..9;
+  /// Level 10 and beyond are procedurally generated on demand and cached.
+  static Puzzle getPuzzleByLevel(int levelNumber) {
+    if (levelNumber <= 0) levelNumber = 1;
+    if (levelNumber <= puzzles.length) {
+      final puzzle = puzzles[levelNumber - 1];
+      // Pipeline validation: identify any invalid or ambiguous existing puzzles without replacing content
+      assert(() {
+        final validation = validatePuzzle(puzzle);
+        if (!validation.isUnique) {
+          debugPrint('WARNING: Predefined puzzle "${puzzle.title}" (${puzzle.id}) failed uniqueness validation: ${validation.status}');
+        }
+        return true;
+      }());
+      return puzzle;
+    }
+
+    if (_generatedCache.containsKey(levelNumber)) {
+      return _generatedCache[levelNumber]!;
+    }
+
+    if (fingerprintTracker.length == 0) {
+      registerHandcraftedFingerprints();
+    }
+
+    final targetDiff = scheduler.getDifficultyForLevel(levelNumber);
+    final generated = PuzzleGenerator.generateForLevel(
+      levelNumber,
+      targetDifficulty: targetDiff,
+      tracker: fingerprintTracker,
+    );
+
+    _generatedCache[levelNumber] = generated;
+    scheduler.recordLevelDifficulty(levelNumber, generated.difficulty);
+    fingerprintTracker.addPuzzle(generated);
+
+    // Save asynchronously to persistent storage safely without unhandled future rejections
+    savePersistedData().catchError((_) {});
+
+    return generated;
+  }
+
   static Puzzle getPuzzleByIndex(int index) {
-    if (puzzles.isEmpty) throw StateError('No puzzles in repository');
-    return puzzles[index % puzzles.length];
+    return getPuzzleByLevel(index + 1);
   }
 
   static int getPuzzleIndex(Puzzle puzzle) {
-    return puzzles.indexWhere((p) => p.id == puzzle.id);
+    return puzzle.levelNumber - 1;
   }
 
   static Puzzle getPuzzleById(String id) {
-    return puzzles.firstWhere(
-      (p) => p.id == id,
-      orElse: () => puzzles.first,
-    );
+    final direct = puzzles.where((p) => p.id == id).firstOrNull;
+    if (direct != null) return direct;
+
+    if (id.startsWith('puzzle_')) {
+      final level = int.tryParse(id.replaceFirst('puzzle_', ''));
+      if (level != null && level >= 1) {
+        return getPuzzleByLevel(level);
+      }
+    }
+    return puzzles.first;
   }
 
   static List<Puzzle> getPuzzlesByDifficulty(Difficulty difficulty) {

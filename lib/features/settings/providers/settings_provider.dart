@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../daily_challenge/providers/daily_challenge_provider.dart';
+import '../../game/providers/game_provider.dart';
 import '../../progression/providers/progression_provider.dart';
 import '../models/settings_state.dart';
 
@@ -72,8 +73,9 @@ class SettingsNotifier extends Notifier<SettingsState> {
   Future<void> resetAllProgress() async {
     await _initFuture;
     await SettingsRepository.resetAllGameData();
-    // Invalidate progression and daily challenge so they reload their initial empty state
+    // Invalidate progression, daily challenge, and stats so they reload their initial empty state
     ref.invalidate(progressionProvider);
     ref.invalidate(dailyChallengeProvider);
+    ref.invalidate(statsProvider);
   }
 }

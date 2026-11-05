@@ -1,6 +1,8 @@
+import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../game/models/dog_placement.dart';
 import '../../game/models/puzzle.dart';
+import '../../game/services/puzzle_repository.dart';
 import '../../game/services/puzzle_validator.dart';
 import '../models/progression_state.dart';
 import '../models/puzzle_progress.dart';
@@ -22,10 +24,13 @@ class ProgressionNotifier extends Notifier<ProgressionState> {
   }
 
   Future<void> _loadInitialState() async {
-    final loaded = await ProgressionRepository.loadProgression();
-    if (!_disposed) {
-      state = loaded;
-    }
+    try {
+      await PuzzleRepository.loadPersistedData();
+      final loaded = await ProgressionRepository.loadProgression();
+      if (!_disposed) {
+        state = loaded;
+      }
+    } catch (_) {}
   }
 
   /// Sets state manually (useful for tests or hydration).
@@ -72,9 +77,15 @@ class ProgressionNotifier extends Notifier<ProgressionState> {
     final newMap = Map<String, PuzzleProgress>.from(state.puzzleProgress)
       ..[puzzle.id] = updatedProgress;
 
+    final nextLevel = puzzle.levelNumber + 1;
+    final newHighest = max(state.highestUnlockedLevel, nextLevel);
+
     final newState = state.copyWith(
       puzzleProgress: newMap,
-      lastPlayedPuzzleId: puzzle.id,
+      highestUnlockedLevel: newHighest,
+      currentLevel: nextLevel,
+      clearInProgressState: true,
+      lastPlayedPuzzleId: 'puzzle_$nextLevel',
     );
 
     state = newState;
@@ -82,9 +93,46 @@ class ProgressionNotifier extends Notifier<ProgressionState> {
     return true;
   }
 
+  /// Saves the player's active in-progress state for the current unfinished level.
+  void saveInProgress(InProgressPuzzleState inProgress) {
+    if (state.isPuzzleCompleted(inProgress.puzzleId)) return;
+
+    final newState = state.copyWith(
+      inProgressState: inProgress,
+      currentLevel: inProgress.levelNumber,
+      lastPlayedPuzzleId: inProgress.puzzleId,
+    );
+    state = newState;
+    ProgressionRepository.saveProgression(newState);
+  }
+
+  /// Clears in-progress state for a completed or reset level.
+  void clearInProgress() {
+    final newState = state.copyWith(clearInProgressState: true);
+    state = newState;
+    ProgressionRepository.saveProgression(newState);
+  }
+
+  /// Sets the active level.
+  void setCurrentLevel(int levelNumber) {
+    final newState = state.copyWith(
+      currentLevel: levelNumber,
+      lastPlayedPuzzleId: 'puzzle_$levelNumber',
+    );
+    state = newState;
+    ProgressionRepository.saveProgression(newState);
+  }
+
   /// Sets the active/last played puzzle id.
   void setLastPlayedPuzzle(String puzzleId) {
-    final newState = state.copyWith(lastPlayedPuzzleId: puzzleId);
+    int? lvl;
+    if (puzzleId.startsWith('puzzle_')) {
+      lvl = int.tryParse(puzzleId.replaceFirst('puzzle_', ''));
+    }
+    final newState = state.copyWith(
+      lastPlayedPuzzleId: puzzleId,
+      currentLevel: lvl ?? state.currentLevel,
+    );
     state = newState;
     ProgressionRepository.saveProgression(newState);
   }

@@ -8,7 +8,6 @@ import 'package:snapdog/features/home/widgets/daily_challenge_card.dart';
 import 'package:snapdog/features/home/widgets/home_decorations.dart';
 import 'package:snapdog/features/home/widgets/home_dog_face_row.dart';
 import 'package:snapdog/features/home/widgets/latest_completed_challenge_card.dart';
-import 'package:snapdog/features/progression/screens/puzzle_selection_screen.dart';
 import 'package:snapdog/features/settings/screens/settings_screen.dart';
 import 'package:snapdog/features/statistics/screens/statistics_screen.dart';
 import 'package:snapdog/shared/widgets/cute_dog_character.dart';
@@ -20,7 +19,7 @@ void main() {
     });
   });
 
-  testWidgets('SnapDog App renders Home screen with Continue Playing and Play Levels buttons', (WidgetTester tester) async {
+  testWidgets('SnapDog App renders Home screen with Continue Level button', (WidgetTester tester) async {
     await tester.pumpWidget(
       const ProviderScope(
         child: SnapDogApp(),
@@ -33,9 +32,8 @@ void main() {
     // Verify SnapDog branding and puzzle prompt exist
     expect(find.text('SnapDog'), findsOneWidget);
     expect(find.text('Can you place all 10 dogs with no touching?'), findsOneWidget);
-    expect(find.text('Overall Progress'), findsOneWidget);
-    expect(find.text('Continue Playing'), findsOneWidget);
-    expect(find.text('Play Levels'), findsOneWidget);
+    expect(find.text('Continue Level'), findsOneWidget);
+    expect(find.textContaining('Level 1'), findsOneWidget);
 
     // Verify decorative row of 3D dog face illustrations
     expect(find.byType(HomeDogFaceRow), findsOneWidget);
@@ -53,16 +51,6 @@ void main() {
     // Verify only one completed challenge card (DailyChallengeCard) is present in Home screen
     expect(find.byType(DailyChallengeCard), findsOneWidget);
     expect(find.byType(LatestCompletedChallengeCard), findsNothing);
-
-    // Tap Play Levels button to open PuzzleSelectionScreen
-    await tester.tap(find.text('Play Levels'));
-    await tester.pumpAndSettle();
-
-    expect(find.byType(PuzzleSelectionScreen), findsOneWidget);
-    expect(find.text('Select Puzzle'), findsOneWidget);
-    expect(find.text('Easy'), findsOneWidget);
-    expect(find.text('Medium'), findsOneWidget);
-    expect(find.text('Hard'), findsOneWidget);
   });
 
   testWidgets('Progress screen displays relocated statistics, streaks, achievements, and completion history', (WidgetTester tester) async {
@@ -140,7 +128,8 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
 
     // Verify GameScreen components render properly
-    expect(find.textContaining('Puppy Park'), findsOneWidget);
+    expect(find.text('Level 1'), findsOneWidget);
+    expect(find.text('EASY'), findsOneWidget);
     expect(find.text('Dogs: 0/10'), findsOneWidget);
     expect(find.text('Undo'), findsOneWidget);
     expect(find.text('Reset'), findsOneWidget);

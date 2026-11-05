@@ -177,6 +177,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
               hintsUsed: next.hintsUsed,
               message: next.contextualMessage,
               onDismissed: () {
+                ref.read(puzzleGameProvider.notifier).dismissHint();
                 if (mounted) {
                   setState(() {
                     _isHintDialogOpen = false;
@@ -186,6 +187,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                 }
               },
             ).then((_) {
+              ref.read(puzzleGameProvider.notifier).dismissHint();
               if (mounted) {
                 setState(() {
                   _isHintDialogOpen = false;

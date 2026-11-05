@@ -1,94 +1,88 @@
-# SnapDog – Loading Screen & Board Border Refinement
+Fix the Streak statistics in SnapDog.
 
-Make only the following targeted changes. Preserve the existing layouts and functionality.
+CURRENT BUG:
+The streak currently increases for every completed game. For example, completing 40 games on the same day displays a 40-day streak.
 
-## 1. Region Boundary Borders
+EXPECTED BEHAVIOR:
+A streak must count consecutive calendar days on which the player completed at least one puzzle.
 
-The latest region borders have become too light and difficult to distinguish.
+### 1. Correct streak calculation
 
-Adjust them to a medium-strength muted brown.
+- Track unique local calendar dates on which at least one level was completed.
+- Completing multiple levels on the same date must count as only ONE active day.
+- Completing 40 puzzles today must result in a 1-day streak if no previous consecutive days exist.
+- Completing puzzles on three consecutive dates must result in a 3-day streak.
 
-Suggested styling:
-- Region boundary color: #A88A76 or #9B7C68.
-- Region boundary thickness: approximately 2–2.5 logical pixels.
-- Ordinary cell grid lines should remain thinner and lighter.
-- Avoid thick double borders where regions meet.
+### 2. Streak rules
 
-The borders should be clearly visible at normal phone viewing size without dominating the pastel board.
+Calculate the current streak using these rules:
 
-Do not change the region color palette.
+- If the player completed at least one puzzle today, count consecutive completed dates backwards starting from today.
+- If the player has not completed a puzzle today but completed one yesterday, count backwards starting from yesterday.
+- If the player completed neither today nor yesterday, the current streak is 0.
+- Missing a calendar day breaks the streak.
+- Multiple completions on the same date never increase the streak more than once.
 
-## 2. Loading Quote Typography
+### 3. Date handling
 
-The loading quote currently looks too small.
+- Use the device's local calendar date.
+- Normalize completion timestamps to calendar dates before comparison.
+- Handle month changes, year changes, leap years, and timezone changes safely.
+- Do not calculate streaks using a simple difference between completion timestamps in hours.
 
-Improve it:
-- Increase quote font size to approximately 25–30 logical pixels, adapting to screen size.
-- Use a friendly, rounded font with medium or semibold weight.
-- Use a warm dark-brown or muted coral color.
-- Center-align the quote.
-- Keep sufficient line spacing.
-- Support longer quotes with graceful wrapping.
-- Avoid clipping on smaller devices.
+### 4. Fix historical data
 
-The quote should be the main visual focus of the loading screen.
+Inspect the existing persistence model.
 
-## 3. Fix Blank/Black Startup Before Loading Screen
+- Derive unique completion dates from existing completion records wherever possible.
+- Deduplicate multiple game completions from the same calendar date.
+- Migrate existing streak data safely.
+- Do not treat the old inflated streak number as a valid historical streak.
+- Preserve completed-level records, puzzle progress, and other statistics.
+- Do not delete game history.
 
-Currently, the app shows a blank or black screen for several seconds before the loading screen appears briefly.
+### 5. Statistics consistency
 
-This must be fixed.
+Ensure all streak-related UI reads from the corrected streak calculation.
 
-Investigate the actual Android and Flutter startup lifecycle.
+If there are separate values for:
+- Current streak
+- Best streak
+- Completed games
+- Total completed levels
 
-Requirements:
+Keep their meanings separate.
 
-1. Configure the Android native launch screen/splash screen to use the same warm cream background as SnapDog.
-2. Show the SnapDog loading screen as the very first Flutter frame.
-3. Display the logo, quote and loading indicator immediately after Flutter starts.
-4. Start asynchronous initialization only after the loading screen is visible.
-5. Keep the loading screen visible while required initialization runs.
-6. Navigate to Home only after essential startup tasks finish.
+Best streak must also be calculated from consecutive unique completion dates, not the number of games played.
 
-Inspect:
-- Android launch theme.
-- Android splash screen configuration.
-- Flutter main() and runApp().
-- Any initialization performed before runApp().
-- Asset loading and precaching.
-- Audio and local storage initialization.
+### 6. Automated tests
 
-Do not perform long synchronous operations before runApp().
+Add tests for:
 
-If an essential initialization task must happen before Flutter starts, ensure the Android native splash screen remains visible throughout that period.
+1. One game completed today → 1-day streak.
+2. 40 games completed today → 1-day streak.
+3. Games completed on three consecutive days → 3-day streak.
+4. Multiple games on each of three consecutive days → 3-day streak.
+5. Today and yesterday completed → 2-day streak.
+6. Today skipped but yesterday completed → streak calculated from yesterday.
+7. Both today and yesterday skipped → 0-day current streak.
+8. A missing day breaks the streak.
+9. Month and year boundaries.
+10. Leap-year dates.
+11. Multiple timestamps on the same calendar date.
+12. Best streak calculated correctly.
+13. Existing historical records migrated without losing completed levels.
+14. App restart preserves the correct streak.
 
-## 4. Smooth Transition
+### 7. Scope restrictions
 
-- Use a subtle fade transition from native splash to Flutter loading screen.
-- Avoid showing a black frame between them.
-- Avoid a flash of the Home screen before initialization finishes.
-- Do not add an artificial loading delay.
-- Keep the loading screen visible for the actual duration of initialization.
-- Once initialization is complete, transition smoothly to Home.
+Do not:
+- Change the Home screen layout.
+- Change gameplay.
+- Change level progression.
+- Change puzzle generation.
+- Change the visual design of the statistics card.
 
-## 5. Validation
+Only fix streak calculation, persistence, migration, and related tests.
 
-Test:
-- Cold launch after force-stopping the app.
-- First launch after installation.
-- Subsequent launches.
-- Slow initialization.
-- Loading failures.
-- Different Android screen sizes.
-
-Verify that there is no blank or black interval before the loading screen.
-
-Run:
-
-flutter test
-flutter analyze
-flutter build apk --debug
-
-Report what caused the startup delay and exactly how it was fixed.
-
-Do not change any other UI or gameplay functionality.
+After implementation, report the files changed, migration behavior, and test results.

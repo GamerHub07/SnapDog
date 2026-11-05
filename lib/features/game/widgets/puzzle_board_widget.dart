@@ -325,6 +325,8 @@ class _CellVisualState {
   final bool isSelected;
   final bool isHighlighted;
   final bool isHint;
+  final bool isHintHighlighted;
+  final bool isHintEliminated;
   final bool isConflicting;
   final bool isWrongPlacement;
 
@@ -334,6 +336,8 @@ class _CellVisualState {
     required this.isSelected,
     required this.isHighlighted,
     required this.isHint,
+    required this.isHintHighlighted,
+    required this.isHintEliminated,
     required this.isConflicting,
     required this.isWrongPlacement,
   });
@@ -347,6 +351,8 @@ class _CellVisualState {
           other.isSelected == isSelected &&
           other.isHighlighted == isHighlighted &&
           other.isHint == isHint &&
+          other.isHintHighlighted == isHintHighlighted &&
+          other.isHintEliminated == isHintEliminated &&
           other.isConflicting == isConflicting &&
           other.isWrongPlacement == isWrongPlacement;
 
@@ -357,6 +363,8 @@ class _CellVisualState {
         isSelected,
         isHighlighted,
         isHint,
+        isHintHighlighted,
+        isHintEliminated,
         isConflicting,
         isWrongPlacement,
       );
@@ -402,6 +410,8 @@ class _PuzzleCellWidget extends ConsumerWidget {
           isSelected: isSelected,
           isHighlighted: isHighlighted,
           isHint: state.isHintCellAt(row, col),
+          isHintHighlighted: state.isHintHighlightedAt(row, col),
+          isHintEliminated: state.isHintEliminatedAt(row, col),
           isConflicting: state.isConflictingAt(row, col),
           isWrongPlacement: state.isWrongPlacementAt(row, col),
         );
@@ -489,6 +499,10 @@ class _CellView extends StatelessWidget {
       cellBg = Color.lerp(regionColor, const Color(0xFFFFB4A2), 0.65)!;
     } else if (cellState.isHint && !cellState.hasDog) {
       cellBg = Color.lerp(regionColor, const Color(0xFFFFF4D0), 0.70)!;
+    } else if (cellState.isHintEliminated && !cellState.hasDog) {
+      cellBg = Color.lerp(regionColor, const Color(0xFFFFCDD2), 0.45)!;
+    } else if (cellState.isHintHighlighted && !cellState.hasDog) {
+      cellBg = Color.lerp(regionColor, const Color(0xFFFFF9C4), 0.35)!;
     } else if (cellState.isSelected) {
       // Subtle background tint for selected cell
       cellBg = Color.lerp(regionColor, Colors.white, 0.40)!;

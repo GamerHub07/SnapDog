@@ -8,7 +8,7 @@ import '../widgets/game_controls.dart';
 import '../widgets/game_header.dart';
 import '../widgets/game_over_dialog.dart';
 import '../widgets/game_rules_card.dart';
-import '../widgets/hint_dialog.dart';
+import '../widgets/hint_banner_widget.dart';
 import '../widgets/mistake_dialog.dart';
 import '../widgets/pause_dialog.dart';
 import '../widgets/puzzle_board_widget.dart';
@@ -41,7 +41,6 @@ class _GameScreenState extends ConsumerState<GameScreen> {
   bool _isExitDialogOpen = false;
   bool _isExiting = false;
   bool _isMistakeDialogOpen = false;
-  bool _isHintDialogOpen = false;
 
   void _confirmExit() {
     if (_isExitDialogOpen || _isExiting) return;
@@ -161,43 +160,6 @@ class _GameScreenState extends ConsumerState<GameScreen> {
             });
           });
         }
-
-        // Trigger hint popup if hint count increased, it is not Game Over,
-        // and no dialog is currently open.
-        if (next.hintsUsed > previous.hintsUsed &&
-            !next.isGameOver &&
-            !_isHintDialogOpen &&
-            !_isExitDialogOpen &&
-            !_isExiting) {
-          _isHintDialogOpen = true;
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!mounted) return;
-            HintDialog.show(
-              context,
-              hintsUsed: next.hintsUsed,
-              message: next.contextualMessage,
-              onDismissed: () {
-                ref.read(puzzleGameProvider.notifier).dismissHint();
-                if (mounted) {
-                  setState(() {
-                    _isHintDialogOpen = false;
-                  });
-                } else {
-                  _isHintDialogOpen = false;
-                }
-              },
-            ).then((_) {
-              ref.read(puzzleGameProvider.notifier).dismissHint();
-              if (mounted) {
-                setState(() {
-                  _isHintDialogOpen = false;
-                });
-              } else {
-                _isHintDialogOpen = false;
-              }
-            });
-          });
-        }
       }
     });
 
@@ -270,13 +232,24 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                     onBack: _confirmExit,
                   ),
 
-                  // 2. Compact illustrated game rules
-                  const GameRulesCard(),
+                  // 2. Compact banner area: Non-modal HintBannerWidget when hint is active,
+                  // or the game rules card and dog breed collection row during normal play.
+                  if (gameState.activeHint != null)
+                    HintBannerWidget(
+                      hint: gameState.activeHint!,
+                      onNextClue: () {
+                        ref.read(puzzleGameProvider.notifier).requestNextHintStage();
+                      },
+                      onDismiss: () {
+                        ref.read(puzzleGameProvider.notifier).dismissHint();
+                      },
+                    )
+                  else ...[
+                    const GameRulesCard(),
+                    const DogBreedCollectionRow(),
+                  ],
 
-                  // 3. Dog breed preview / character collection
-                  const DogBreedCollectionRow(),
-
-                  // 4. 10x10 Puzzle Board (maximum usable area)
+                  // 3. 10x10 Puzzle Board (maximum usable area)
                   const Expanded(
                     child: Padding(
                       padding: EdgeInsets.symmetric(horizontal: 14.0, vertical: 4.0),

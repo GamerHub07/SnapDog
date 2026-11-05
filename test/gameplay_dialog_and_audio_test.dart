@@ -6,7 +6,7 @@ import 'package:snapdog/core/services/sound_service.dart';
 import 'package:snapdog/core/utils/sound_haptic_helper.dart';
 import 'package:snapdog/features/game/screens/game_screen.dart';
 import 'package:snapdog/features/game/widgets/game_over_dialog.dart';
-import 'package:snapdog/features/game/widgets/hint_dialog.dart';
+import 'package:snapdog/features/game/widgets/hint_banner_widget.dart';
 import 'package:snapdog/features/game/widgets/mistake_dialog.dart';
 import 'package:snapdog/features/game/widgets/puzzle_board_widget.dart';
 import 'package:snapdog/features/settings/models/settings_state.dart';
@@ -65,7 +65,7 @@ void main() {
       expect(rectAfter, equals(rectBefore));
     });
 
-    testWidgets('2. Hint dialog does NOT change board position or size before, during, or after', (tester) async {
+    testWidgets('2. Hint banner displays correctly without shifting layout', (tester) async {
       await tester.pumpWidget(
         const ProviderScope(
           child: MaterialApp(
@@ -78,31 +78,25 @@ void main() {
       final boardFinder = find.byType(PuzzleBoardWidget);
       expect(boardFinder, findsOneWidget);
 
-      final rectBefore = tester.getRect(boardFinder);
-
       // Tap Hint button
       await tester.tap(find.text('Hint'));
       await tester.pump();
       await tester.pumpAndSettle();
 
-      // HintDialog is displayed as an overlay
-      expect(find.byType(HintDialog), findsOneWidget);
-      expect(find.text('Puppy Hint'), findsOneWidget);
-      expect(find.text('Hints used: 1'), findsOneWidget);
+      // HintBannerWidget is displayed
+      expect(find.byType(HintBannerWidget), findsOneWidget);
+      expect(find.text('Got it'), findsOneWidget);
 
-      // Verify board position & size are completely unchanged during dialog display
-      final rectDuring = tester.getRect(boardFinder);
-      expect(rectDuring, equals(rectBefore));
+      // Verify board remains visible and does not overlap hint banner
+      final bannerRect = tester.getRect(find.byType(HintBannerWidget));
+      final boardRect = tester.getRect(boardFinder);
+      expect(bannerRect.overlaps(boardRect), isFalse);
 
-      // Dismiss dialog
+      // Dismiss hint
       await tester.tap(find.text('Got it'));
       await tester.pumpAndSettle();
 
-      expect(find.byType(HintDialog), findsNothing);
-
-      // Verify board position & size remain completely unchanged after dismissal
-      final rectAfter = tester.getRect(boardFinder);
-      expect(rectAfter, equals(rectBefore));
+      expect(find.byType(HintBannerWidget), findsNothing);
     });
 
     testWidgets('3. Rapid taps cannot open duplicate dialogs', (tester) async {
@@ -121,12 +115,12 @@ void main() {
       await tester.tap(find.text('Hint'), warnIfMissed: false);
       await tester.pumpAndSettle();
 
-      // Exactly ONE HintDialog is open
-      expect(find.byType(HintDialog), findsOneWidget);
+      // Exactly ONE HintBannerWidget is open
+      expect(find.byType(HintBannerWidget), findsOneWidget);
 
       await tester.tap(find.text('Got it'));
       await tester.pumpAndSettle();
-      expect(find.byType(HintDialog), findsNothing);
+      expect(find.byType(HintBannerWidget), findsNothing);
     });
 
     testWidgets('4. 3rd mistake shows GameOverDialog instead of regular MistakeDialog', (tester) async {

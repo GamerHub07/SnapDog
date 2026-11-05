@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:snapdog/app.dart';
 import 'package:snapdog/features/game/screens/game_screen.dart';
+import 'package:snapdog/features/game/widgets/hint_banner_widget.dart';
 import 'package:snapdog/features/home/widgets/daily_challenge_card.dart';
 import 'package:snapdog/features/home/widgets/home_decorations.dart';
 import 'package:snapdog/features/home/widgets/home_dog_face_row.dart';
@@ -140,7 +141,8 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    expect(find.text('A little pup belongs here!'), findsOneWidget);
+    // Non-modal progressive hint banner is displayed
+    expect(find.byType(HintBannerWidget), findsOneWidget);
 
     // Dismiss the Hint overlay dialog via Got it button
     if (find.text('Got it').evaluate().isNotEmpty) {

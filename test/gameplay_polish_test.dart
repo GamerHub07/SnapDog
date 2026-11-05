@@ -126,6 +126,15 @@ void main() {
       // Hint sound was played
       expect(SoundService.instance.lastPlayedSoundAsset, SoundService.hintSoundAsset);
 
+      // Advance to stage 2 then stage 3 for cell placement hint
+      await tester.tap(find.text('Next clue'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      await tester.tap(find.text('Next clue'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
       // Cell hint paw icon and pulsing highlight exist
       expect(find.byKey(const ValueKey('cell_hint')), findsOneWidget);
     });

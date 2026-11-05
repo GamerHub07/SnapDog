@@ -2,7 +2,9 @@ import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:snapdog/features/game/models/dog_placement.dart';
+import 'package:snapdog/features/game/models/progressive_hint.dart';
 import 'package:snapdog/features/game/providers/game_provider.dart';
+import 'package:snapdog/features/game/services/hint_service.dart';
 import 'package:snapdog/features/game/services/puzzle_validator.dart';
 
 void main() {
@@ -344,24 +346,32 @@ void main() {
       final notifier = container.read(puzzleGameProvider.notifier);
       final puzzle = container.read(puzzleGameProvider).puzzle;
 
-      final targetSol = puzzle.solution.first;
+      // In Puzzle 1, HintService finds a forced placement cell:
+      final hint3 = HintService.generateHint(
+        puzzle: puzzle,
+        currentPlacements: const [],
+        stage: HintStage.placement,
+      );
+      final hintTarget = hint3.targetCell!;
 
-      // Mark that cell with a cross
-      notifier.singleTapCell(targetSol.row, targetSol.col);
-      expect(container.read(puzzleGameProvider).hasCrossAt(targetSol.row, targetSol.col), isTrue);
+      // Mark that cell with a cross first
+      notifier.singleTapCell(hintTarget.x, hintTarget.y);
+      expect(container.read(puzzleGameProvider).hasCrossAt(hintTarget.x, hintTarget.y), isTrue);
 
-      // Request hint (targets an unplaced solution cell)
+      // Request progressive hint and advance to placement stage (Stage 3)
       notifier.useHint();
+      notifier.requestNextHintStage();
+      notifier.requestNextHintStage();
       final state = container.read(puzzleGameProvider);
-      expect(state.hintCell, equals(Point(targetSol.row, targetSol.col)));
-      expect(state.contextualMessage, equals('A little pup belongs here!'));
+      expect(state.hintStage, equals(HintStage.placement));
+      expect(state.hintCell, equals(hintTarget));
 
       // Accept hint
       notifier.acceptHint();
 
       final after = container.read(puzzleGameProvider);
-      expect(after.hasDogAt(targetSol.row, targetSol.col), isTrue);
-      expect(after.hasCrossAt(targetSol.row, targetSol.col), isFalse); // Cross replaced
+      expect(after.hasDogAt(hintTarget.x, hintTarget.y), isTrue);
+      expect(after.hasCrossAt(hintTarget.x, hintTarget.y), isFalse); // Cross replaced
       expect(after.hintCell, isNull);
     });
   });

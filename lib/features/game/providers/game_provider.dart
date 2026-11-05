@@ -341,6 +341,14 @@ class PuzzleGameNotifier extends Notifier<PuzzleGameState> {
   void singleTapCell(int r, int c) {
     if (state.isPaused || state.isCompleted || state.isGameOver) return;
 
+    // If this cell is the active hint placement target in Stage 3, tapping it places the puppy
+    if (state.activeHint != null &&
+        state.activeHint!.stage == HintStage.placement &&
+        state.isHintCellAt(r, c)) {
+      doubleTapCell(r, c);
+      return;
+    }
+
     final hasDog = state.hasDogAt(r, c);
     final hasCross = state.hasCrossAt(r, c);
 
@@ -725,14 +733,6 @@ class PuzzleGameNotifier extends Notifier<PuzzleGameState> {
       newHintsUsed = state.hintsUsed;
     }
 
-    DogPlacement? targetSol;
-    for (final solDog in state.puzzle.solution) {
-      if (!state.hasDogAt(solDog.row, solDog.col)) {
-        targetSol = solDog;
-        break;
-      }
-    }
-
     state = state.copyWith(
       activeHint: hint,
       hintStage: HintStage.guidance,
@@ -740,8 +740,9 @@ class PuzzleGameNotifier extends Notifier<PuzzleGameState> {
       highlightedRow: hint.highlightedRow,
       highlightedCol: hint.highlightedCol,
       highlightedRegion: hint.highlightedRegion,
-      hintCell: targetSol != null ? Point(targetSol.row, targetSol.col) : null,
-      contextualMessage: 'A little pup belongs here!',
+      hintCell: hint.targetCell,
+      clearHintCell: hint.targetCell == null,
+      contextualMessage: hint.message,
       hintsUsed: newHintsUsed,
       conflictingPlacements: const {},
     );

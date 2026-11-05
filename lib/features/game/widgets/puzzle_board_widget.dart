@@ -11,6 +11,7 @@ import '../../../shared/widgets/cute_dog_character.dart';
 import '../../../shared/widgets/paw_icon.dart';
 import '../../../shared/widgets/sparkle_effect.dart';
 import '../models/dog_breed.dart';
+import '../models/progressive_hint.dart';
 import '../models/puzzle.dart';
 import '../providers/game_provider.dart';
 
@@ -329,6 +330,7 @@ class _CellVisualState {
   final bool isHintEliminated;
   final bool isConflicting;
   final bool isWrongPlacement;
+  final HintStage? hintStage;
 
   const _CellVisualState({
     required this.hasDog,
@@ -340,6 +342,7 @@ class _CellVisualState {
     required this.isHintEliminated,
     required this.isConflicting,
     required this.isWrongPlacement,
+    this.hintStage,
   });
 
   @override
@@ -354,7 +357,8 @@ class _CellVisualState {
           other.isHintHighlighted == isHintHighlighted &&
           other.isHintEliminated == isHintEliminated &&
           other.isConflicting == isConflicting &&
-          other.isWrongPlacement == isWrongPlacement;
+          other.isWrongPlacement == isWrongPlacement &&
+          other.hintStage == hintStage;
 
   @override
   int get hashCode => Object.hash(
@@ -367,6 +371,7 @@ class _CellVisualState {
         isHintEliminated,
         isConflicting,
         isWrongPlacement,
+        hintStage,
       );
 }
 
@@ -414,6 +419,7 @@ class _PuzzleCellWidget extends ConsumerWidget {
           isHintEliminated: state.isHintEliminatedAt(row, col),
           isConflicting: state.isConflictingAt(row, col),
           isWrongPlacement: state.isWrongPlacementAt(row, col),
+          hintStage: state.activeHint?.stage,
         );
       }),
     );
@@ -491,18 +497,26 @@ class _CellView extends StatelessWidget {
   Widget build(BuildContext context) {
     final regionColor = AppColors.regionColors[regionId % AppColors.regionColors.length];
 
+    final isStage1Guidance = cellState.hintStage == HintStage.guidance;
+    final isStage2Elimination = cellState.hintStage == HintStage.elimination;
+    final isStage3Placement = cellState.hintStage == HintStage.placement;
+
     // Subtle, friendly cell background tints
     Color cellBg = regionColor;
     if (cellState.isWrongPlacement) {
       cellBg = Color.lerp(regionColor, const Color(0xFFFFB4A2), 0.75)!;
     } else if (cellState.isConflicting && cellState.hasDog) {
       cellBg = Color.lerp(regionColor, const Color(0xFFFFB4A2), 0.65)!;
-    } else if (cellState.isHint && !cellState.hasDog) {
+    } else if (isStage3Placement && cellState.isHint && !cellState.hasDog) {
       cellBg = Color.lerp(regionColor, const Color(0xFFFFF4D0), 0.70)!;
-    } else if (cellState.isHintEliminated && !cellState.hasDog) {
-      cellBg = Color.lerp(regionColor, const Color(0xFFFFCDD2), 0.45)!;
+    } else if (isStage2Elimination && cellState.isHintEliminated && !cellState.hasDog) {
+      // Distinct translucent peach tint for eliminated candidates
+      cellBg = Color.lerp(regionColor, const Color(0xFFFFD1BA), 0.55)!;
+    } else if (isStage1Guidance && cellState.isHintHighlighted && !cellState.hasDog) {
+      // Keep region color visible with gentle luminous tint
+      cellBg = Color.lerp(regionColor, Colors.white, 0.22)!;
     } else if (cellState.isHintHighlighted && !cellState.hasDog) {
-      cellBg = Color.lerp(regionColor, const Color(0xFFFFF9C4), 0.35)!;
+      cellBg = Color.lerp(regionColor, Colors.white, 0.16)!;
     } else if (cellState.isSelected) {
       // Subtle background tint for selected cell
       cellBg = Color.lerp(regionColor, Colors.white, 0.40)!;
@@ -561,8 +575,45 @@ class _CellView extends StatelessWidget {
               ),
             ),
 
-          // Hint pulsing highlight indicator
-          if (cellState.isHint && !cellState.hasDog)
+          // Stage 1: Guidance boundary outline / glow around the highlighted region or row/col
+          if (isStage1Guidance && cellState.isHintHighlighted && !cellState.hasDog)
+            Positioned.fill(
+              child: Container(
+                margin: const EdgeInsets.all(0.5),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.12),
+                  border: Border.all(
+                    color: const Color(0xFFF4A261).withValues(alpha: 0.85),
+                    width: 1.6,
+                  ),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+
+          // Stage 2: Elimination marker (subtle small cross indicator)
+          if (isStage2Elimination && cellState.isHintEliminated && !cellState.hasDog && !cellState.hasCross)
+            Positioned.fill(
+              child: Center(
+                child: Container(
+                  width: 16,
+                  height: 16,
+                  alignment: Alignment.center,
+                  decoration: const BoxDecoration(
+                    color: Color(0x38E76F51),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.close_rounded,
+                    size: 13,
+                    color: Color(0xFFD35400),
+                  ),
+                ),
+              ),
+            ),
+
+          // Stage 3: Forced cell pulsing highlight indicator
+          if (isStage3Placement && cellState.isHint && !cellState.hasDog)
             const Positioned.fill(
               child: _PulsingHintHighlight(),
             ),
@@ -677,7 +728,7 @@ class _CellView extends StatelessWidget {
           size: 22,
         ),
       );
-    } else if (cellState.isHint) {
+    } else if (cellState.isHint && cellState.hintStage == HintStage.placement) {
       content = const PawIcon(
         key: ValueKey('cell_hint'),
         size: 18,
